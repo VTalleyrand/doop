@@ -1,7 +1,7 @@
 {
   "integrationBranches": ["main", "zaboka"],
   "setup": "bun install --frozen-lockfile",
-  "check": "bun run typecheck && bun run test --exclude tests/serverListen.test.ts && bun run build",
+  "check": "bun run typecheck && bun run test && bun run build",
   "deploy": {
     "command": "node zaboka/deploy.mjs",
     "from": "clean-checkout"

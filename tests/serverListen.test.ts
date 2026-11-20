@@ -1,7 +1,16 @@
 import { once } from 'node:events'
 import { createConnection } from 'node:net'
+import { networkInterfaces } from 'node:os'
 import { expect, it } from 'vitest'
 import { startServer } from './harness'
+
+/* Linux routes all of 127.0.0.0/8 to loopback. macOS answers only 127.0.0.1 unless 127.0.0.2 is
+   aliased on lo0, and a connection to it there neither connects nor is refused: it hangs. */
+const alternateLoopback =
+  process.platform !== 'darwin' ||
+  Object.values(networkInterfaces())
+    .flat()
+    .some((address) => address?.address === '127.0.0.2')
 
 async function connectToAlternateLoopback(port: number): Promise<void> {
   const socket = createConnection({ host: '127.0.0.2', port })
@@ -15,7 +24,7 @@ async function connectToAlternateLoopback(port: number): Promise<void> {
 it('listens on IPv4 and IPv6 interfaces by default', async () => {
   const server = await startServer({ HOST: '' })
   try {
-    await expect(connectToAlternateLoopback(server.port)).resolves.toBeUndefined()
+    if (alternateLoopback) await expect(connectToAlternateLoopback(server.port)).resolves.toBeUndefined()
     expect((await fetch(`http://[::1]:${server.port}/healthz`)).ok).toBe(true)
     expect(server.startupUrl).toBe(`http://localhost:${server.port}`)
     expect((await fetch(`${server.base}/healthz`)).ok).toBe(true)
@@ -30,7 +39,8 @@ it('restricts connections to the configured interface', async () => {
   try {
     expect((await fetch(`${server.base}/healthz`)).ok).toBe(true)
     expect(server.startupUrl).toBe(`http://127.0.0.1:${server.port}`)
-    await expect(connectToAlternateLoopback(server.port)).rejects.toMatchObject({ code: 'ECONNREFUSED' })
+    if (alternateLoopback)
+      await expect(connectToAlternateLoopback(server.port)).rejects.toMatchObject({ code: 'ECONNREFUSED' })
   } finally {
     server.stop()
     await server.stopped
@@ -42,7 +52,8 @@ it('listens on the configured IPv6 interface and prints a valid URL', async () =
   try {
     expect(server.startupUrl).toBe(`http://[::1]:${server.port}`)
     expect((await fetch(`${server.startupUrl}/healthz`)).ok).toBe(true)
-    await expect(connectToAlternateLoopback(server.port)).rejects.toMatchObject({ code: 'ECONNREFUSED' })
+    if (alternateLoopback)
+      await expect(connectToAlternateLoopback(server.port)).rejects.toMatchObject({ code: 'ECONNREFUSED' })
   } finally {
     server.stop()
     await server.stopped

@@ -32,9 +32,8 @@ Services: launchd `local.zaboka.doop` and `local.zaboka.doop-door` (written by `
 
 Work on a branch as usual; Zaboka's Code runs merge into `zaboka`, and the owner merges to `main`.
 
-- Check: `bun run typecheck && bun run test --exclude tests/serverListen.test.ts && bun run build`
-  (`zaboka-coding.json`). The three listen tests connect to a second loopback address, which macOS
-  doesn't have, so they hang on any Mac; they pass on upstream's Linux CI.
+- Check: `bun run typecheck && bun run test && bun run build` (`zaboka-coding.json`). The full suite
+  takes about four minutes on the Mini.
 - Deploy what `main` holds: `node zaboka/deploy.mjs` from a clean checkout. It builds in the live
   checkout, restarts both services and checks that the app opens signed in and the design tools answer;
   if not, it puts the previous commit back. `node zaboka/deploy.mjs --rollback` goes back one deploy.
