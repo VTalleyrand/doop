@@ -50,3 +50,10 @@ tests/             - vitest test suite
 TypeScript. Always use the `clean-code:typescript` skill when writing or reviewing TypeScript
 code. Formatter and lint rules are captured in `.context/CODESTYLE.md`, which `.context/INDEX.md`
 links.
+
+## This fork: Doop for Zaboka
+
+This fork runs on Zaboka's Mac mini with no login, beside Zaboka's agents. How it runs, how to check
+and deploy a change, and how to take upstream's updates are in `zaboka/README.md`; read it before
+changing anything about how Doop starts, signs in or serves `/mcp`. Keep Zaboka-only code in
+`zaboka/`. Never commit anything from `~/Library/Application Support/Doop` (settings, data, secrets).
