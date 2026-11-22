@@ -137,7 +137,7 @@ describe.skipIf(!findBrowserPath())('the Pages and Layers split', () => {
     await dragSplit(-120)
     const dragged = await sizes()
     await showCanvasPage(page, FRAMES, '', { pages: PAGES })
-    await expect.poll(async () => (await sizes()).pages).toBeCloseTo(dragged.pages, 0)
+    expect((await sizes()).pages).toBeCloseTo(dragged.pages, 0)
   })
 
   it('drags past the last page row and still leaves a visible Layers row at the bottom', async () => {

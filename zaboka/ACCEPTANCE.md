@@ -93,3 +93,38 @@ entry-point guards; server authorization and dormant hosted implementations rema
 upstream. The final diff excludes editor behavior/test-runner repairs, reducing
 future upstream conflicts. Route/menu/dialog entry points listed in README remain
 the deliberate upstream merge review burden.
+
+## Commit boundary audit (2026-11-22)
+
+Decisions: retain the local policy and its acceptance tests; restore all five
+inherited editor/configuration edits to unchanged base `2e7636860960fdda9c80ec1014b11994f495c214`.
+The rich-text slice dropped earlier saves from the count and therefore weakened
+the base assertion. Locator/poll substitutions and an unmeasured worker cap are
+not needed to establish this UI policy. No retry, skip, timeout increase, or hook
+bypass is included. Geometry and undo assertions match the base.
+
+Exact historical hook diagnosis: `/tmp/doop-resume-evidence/commit.log` shows
+Prettier and lint-staged cleanup passing, followed by commitlint `subject-empty`
+and `type-empty`, then `husky - commit-msg script failed (code 1)`. The message
+lacked a conventional type prefix. A normal instrumented commit with `test:`
+passed in 1.51 seconds, exit 0; complete separate streams and exit metadata are
+in `/tmp/doop-hook-diagnosis/`. There is no captured evidence of a formatter,
+resource, or timeout failure. This explains the saved commit failure only; other
+historical runner failures remain unclassified.
+
+Base test review: accountMenu and appMenu expectations change because hosted
+links and upgrades are deliberately absent. Five dormant hosted suites
+(chatgptConnection, codexInstall, connectModal, librarySection, upgradeModal) retain their original behavioral
+assertions by enabling the hosted policy only in test mocks. New designPolicy,
+localDesignBrowser and localDesignAcceptance tests cover the default policy,
+menus, initial URLs, authenticated persistence and retained tools. The baseline
+full log records 23 skips before these additions; no new skip was added to an
+existing suite. Acceptance uses the repository's existing browser availability
+condition and requires Chromium to execute.
+
+Runner access in this resumed environment returns exactly:
+`no credential in this environment, so there is nobody to act as`.
+Bounded setup fix: resume the run through Zaboka with its normal turn-scoped CLI
+credential injected, then request the configured check and revision-bound UI
+runner scenario. Do not copy owner credentials or fabricate a recorded pass.
+Local captures are preparatory artifacts and cannot replace runner review.

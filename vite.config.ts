@@ -25,9 +25,6 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/.claude/**'],
     setupFiles: ['tests/setup.ts'],
     globalSetup: ['tests/globalSetup.ts'],
-    // Workers share the machine with Chromium renderers and the fixture server.
-    // Using every CPU for test workers starves browser input and MCP imports.
-    maxWorkers: 4,
     projects: [
       { test: { name: 'parallel', exclude: clipboardTests } },
       // Browser contexts share the system clipboard, so these files must run one at a time.
