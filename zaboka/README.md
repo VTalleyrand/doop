@@ -16,6 +16,9 @@ change is worth having, but prefer this folder for anything only Zaboka needs.
   `http://127.0.0.1:4410/mcp` as an MCP server for its agents. Tailscale Serve may also put the door on
   the tailnet over HTTPS for a browser.
 
+Zaboka Design opens a canvas with `?zaboka-theme=light|dark`. `zaboka/door.mjs` saves that
+choice as Doop's theme in localStorage (`doop-theme`), then opens the same URL without the parameter.
+
 Kept outside the repository, in `~/Library/Application Support/Doop/` (never commit any of it):
 
 | File            | What                                                                       |
