@@ -91,7 +91,25 @@ function withSession(headers) {
   return { ...headers, cookie: [...own, cookieHeader()].join('; ') }
 }
 
+/* Zaboka's Design window opens a canvas with ?zaboka-theme=light|dark so Doop
+   matches Zaboka's look. Doop keeps its choice in localStorage ('doop-theme',
+   src/lib/theme.ts, read by index.html before the bundle), so the door saves
+   it there and moves on to the same address without the parameter. Doop's
+   own code is untouched, so upstream merges stay clean. */
+function themeHandoff(req, res) {
+  if (req.method !== 'GET' || !req.url?.includes('zaboka-theme=')) return false
+  const url = new URL(req.url, 'http://door')
+  const theme = url.searchParams.get('zaboka-theme')
+  if (theme !== 'light' && theme !== 'dark') return false
+  url.searchParams.delete('zaboka-theme')
+  const next = url.pathname + (url.search || '') + url.hash
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+  res.end(`<!doctype html><meta charset="utf-8"><style>html{background:${theme === 'dark' ? '#0a0a0a' : '#fff'}}</style><script>try{localStorage.setItem('doop-theme',${JSON.stringify(theme)})}catch{}location.replace(${JSON.stringify(next)})</script>`)
+  return true
+}
+
 const server = createServer(async (req, res) => {
+  if (themeHandoff(req, res)) return
   try {
     // Sign out would end the session everyone shares: answer it here and leave the session alone.
     if (req.method === 'POST' && req.url?.startsWith('/api/auth/sign-out')) {
