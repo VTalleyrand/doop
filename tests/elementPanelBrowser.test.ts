@@ -166,8 +166,19 @@ describe.skipIf(!findBrowserPath())('element design controls', () => {
     await frame.waitForFunction(() =>
       getComputedStyle(document.querySelector('#text')!).fontFamily.includes('Display Face'),
     )
-    await page.select(selector, '"Lora", serif')
-    await page.click('[aria-label="Align center"]')
+    // Font options use the inspected computed stack for the current family.
+    // Wait for Display Face's inspector read before choosing Lora's option.
+    await page.waitForFunction(() =>
+      document.querySelector<HTMLSelectElement>('select[aria-label="Font family"]')?.value.includes('Display Face'),
+    )
+    expect(await page.select(selector, '"Lora", serif')).toEqual(['"Lora", serif'])
+    // Finish the font round trip before the next pointer interaction: the
+    // inspector can still be refreshing its controls after select() returns.
+    await page.waitForFunction(
+      () => document.querySelector<HTMLSelectElement>('select[aria-label="Font family"]')?.value === 'Lora, serif',
+    )
+    await frame.waitForFunction(() => getComputedStyle(document.querySelector('#text')!).fontFamily === 'Lora, serif')
+    await page.locator('[aria-label="Align center"]').click()
     await frame.waitForFunction(() => getComputedStyle(document.querySelector('#text')!).textAlign === 'center')
     await page.keyboard.press('ArrowRight')
     await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Align right')
