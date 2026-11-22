@@ -10,6 +10,12 @@ import type { Canvas } from '../shared/types'
  * page lands the keyboard in it.
  */
 
+// Preserve standalone native-composer behavior; local Design has separate entry-point coverage.
+vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
+  nativeAI: true,
+}))
+
 const mocks = vi.hoisted(() => ({
   addCard: vi.fn(() => Promise.resolve({})),
   agentAllowance: vi.fn(() => Promise.resolve({ used: 0, limit: 5, byoModel: false })),

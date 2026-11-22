@@ -1,4 +1,4 @@
-import { hostedProducts } from '../../zaboka/designPolicy'
+import { hostedProducts, nativeAI } from '../../zaboka/designPolicy'
 import { CAPTURE_PREFIX, pasteWebCapture } from '../lib/webCapture'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { canEditOpenCanvas, pickedSelectors, roleOf, useStore } from '../lib/store'
@@ -628,7 +628,7 @@ export function CanvasPage({
   function openAgent() {
     const state = useStore.getState()
     /* the composer is an editor's: readers (and guests) have none */
-    if (guest || !state.canvas || !canEditOpenCanvas(state)) return
+    if (!nativeAI || guest || !state.canvas || !canEditOpenCanvas(state)) return
     setShowActivity(true)
     if (state.uiHidden) state.toggleUiHidden()
     state.setPanelTab('tasks')
@@ -1046,31 +1046,34 @@ export function CanvasPage({
           style={rulerInset || docked ? { top: 'var(--chrome-top)', left: rulerInset } : undefined}
         >
           <div className="pointer-events-none absolute top-3.5 right-[var(--chrome-right)] z-30 flex flex-col items-end gap-2 transition-[right] duration-150 [&>*]:pointer-events-auto max-md:top-[56px] max-md:right-2 max-md:left-2">
-            {pendingProposal && mutedProposal !== pendingProposal.id && !(showActivity && panelTab === 'memory') && (
-              <div className="flex items-center rounded-[10px] bg-surface shadow-ring">
-                <Button
-                  variant="bare"
-                  className="h-8 pr-1 pl-3 text-[12px] font-medium text-ink hover:bg-transparent hover:text-ink"
-                  onClick={() => {
-                    useStore.getState().setPanelTab('memory')
-                    setShowActivity(true)
-                  }}
-                >
-                  <DoopMark size={12} /> {t('canvas.memorySuggestionReview')}
-                </Button>
-                <Button
-                  variant="bare"
-                  size="icon-sm"
-                  className="mr-1 size-6 rounded-[6px] text-ink-faint"
-                  title={t('canvas.hideForNow')}
-                  aria-label={t('canvas.hideForNow')}
-                  onClick={() => setMutedProposal(pendingProposal.id)}
-                >
-                  <XIcon className="size-3" />
-                </Button>
-              </div>
-            )}
-            {decisionToast && (
+            {nativeAI &&
+              pendingProposal &&
+              mutedProposal !== pendingProposal.id &&
+              !(showActivity && panelTab === 'memory') && (
+                <div className="flex items-center rounded-[10px] bg-surface shadow-ring">
+                  <Button
+                    variant="bare"
+                    className="h-8 pr-1 pl-3 text-[12px] font-medium text-ink hover:bg-transparent hover:text-ink"
+                    onClick={() => {
+                      useStore.getState().setPanelTab('memory')
+                      setShowActivity(true)
+                    }}
+                  >
+                    <DoopMark size={12} /> {t('canvas.memorySuggestionReview')}
+                  </Button>
+                  <Button
+                    variant="bare"
+                    size="icon-sm"
+                    className="mr-1 size-6 rounded-[6px] text-ink-faint"
+                    title={t('canvas.hideForNow')}
+                    aria-label={t('canvas.hideForNow')}
+                    onClick={() => setMutedProposal(pendingProposal.id)}
+                  >
+                    <XIcon className="size-3" />
+                  </Button>
+                </div>
+              )}
+            {nativeAI && decisionToast && (
               <Button
                 variant="bare"
                 className="max-w-full items-center gap-2.5 whitespace-normal rounded-[12px] bg-surface px-3.5 py-2.5 text-left font-normal shadow-pop transition-shadow hover:bg-surface hover:shadow-ring-hover sm:max-w-[320px] [&_svg]:text-ink-soft"
@@ -1312,7 +1315,7 @@ export function CanvasPage({
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
           onAsk={
-            guest || readOnly
+            !nativeAI || guest || readOnly
               ? null
               : (prompt) => {
                   useStore.getState().setComposerDraft(canvasId, prompt)
@@ -1357,7 +1360,7 @@ export function CanvasPage({
           }}
         />
       )}
-      {limitWall && (
+      {nativeAI && limitWall && (
         <LimitWall
           canvasId={canvasId}
           onClose={() => useStore.getState().setLimitWall(false)}

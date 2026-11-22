@@ -1,4 +1,4 @@
-import { hostedProducts } from '../../zaboka/designPolicy'
+import { hostedProducts, nativeAI } from '../../zaboka/designPolicy'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Canvas, CanvasMeta, WorkspaceSummary } from '../../shared/types'
 import { colorFor } from '../../shared/types'
@@ -128,7 +128,7 @@ export function Home() {
   /* ⌘/ hands the keyboard to the composer; ⌘K opens the rail's search */
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === '/' && (e.metaKey || e.ctrlKey)) {
+      if (nativeAI && e.key === '/' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         setComposerFocusAt(Date.now())
       }
@@ -157,7 +157,7 @@ export function Home() {
    *  A card that will not queue (an allowance that ran out) still opens the
    *  canvas — the brief is not lost, the wall there explains. */
   async function promptCanvas(text: string, drafts: DraftCount) {
-    if (starting) return
+    if (!nativeAI || starting) return
     setStarting(true)
     const workspaceId = workspaceOf(scope)
     try {
@@ -349,19 +349,21 @@ export function Home() {
         </DashHeader>
 
         <DashContent className="px-0 pt-0 md:px-0 md:pt-0">
-          <HomeHero
-            firstName={first}
-            busy={starting}
-            focusAt={composerFocusAt}
-            actions={{
-              onPrompt: promptCanvas,
-              onImport: () => setImporting(true),
-              onConnectAgents: () => setShowConnect(true),
-              onAutomations: () => navigate('/automations'),
-              onIntegrations: () => navigate('/integrations'),
-              onCommunity: () => navigate('/community'),
-            }}
-          />
+          {nativeAI && (
+            <HomeHero
+              firstName={first}
+              busy={starting}
+              focusAt={composerFocusAt}
+              actions={{
+                onPrompt: promptCanvas,
+                onImport: () => setImporting(true),
+                onConnectAgents: () => setShowConnect(true),
+                onAutomations: () => navigate('/automations'),
+                onIntegrations: () => navigate('/integrations'),
+                onCommunity: () => navigate('/community'),
+              }}
+            />
+          )}
 
           <div className="px-4 pt-8 md:px-8 md:pt-10">
             {hostedProducts && currentWorkspace && !currentWorkspace.active && (

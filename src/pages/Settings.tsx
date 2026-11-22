@@ -1,4 +1,4 @@
-import { hostedProducts, designSettingsPaneAllowed } from '../../zaboka/designPolicy'
+import { hostedProducts, nativeAI, designSettingsPaneAllowed } from '../../zaboka/designPolicy'
 import { useState } from 'react'
 import { navigate } from '../App'
 import { useT, type PlainMessageKey } from '../lib/i18n'
@@ -64,7 +64,7 @@ function isPane(value: string | null): value is Pane {
 /** ?pane= deep-links a section — the connect modal sends people to ?pane=keys. */
 function initialPane(): Pane {
   const pane = new URLSearchParams(location.search).get('pane')
-  return isPane(pane) ? pane : 'agent'
+  return isPane(pane) ? pane : nativeAI ? 'agent' : 'general'
 }
 
 /**
@@ -150,22 +150,26 @@ export function Settings() {
           >
             {t('settings.appearanceTitle')}
           </DashNavItem>
-          <DashNavItem
-            density="rail"
-            icon={<SparkIcon size="rail" />}
-            active={pane === 'agent'}
-            onClick={() => setPane('agent')}
-          >
-            {t('settings.agentTitle')}
-          </DashNavItem>
-          <DashNavItem
-            density="rail"
-            icon={<KeyIcon size="rail" />}
-            active={pane === 'keys'}
-            onClick={() => setPane('keys')}
-          >
-            {t('settings.keysTitle')}
-          </DashNavItem>
+          {nativeAI && (
+            <DashNavItem
+              density="rail"
+              icon={<SparkIcon size="rail" />}
+              active={pane === 'agent'}
+              onClick={() => setPane('agent')}
+            >
+              {t('settings.agentTitle')}
+            </DashNavItem>
+          )}
+          {nativeAI && (
+            <DashNavItem
+              density="rail"
+              icon={<KeyIcon size="rail" />}
+              active={pane === 'keys'}
+              onClick={() => setPane('keys')}
+            >
+              {t('settings.keysTitle')}
+            </DashNavItem>
+          )}
           {hostedProducts && (
             <DashNavItem
               density="rail"
@@ -215,15 +219,19 @@ export function Settings() {
               <TabsTrigger value="general">
                 <GearIcon size="rail" /> {t('settings.generalTitle')}
               </TabsTrigger>
-              <TabsTrigger value="agent">
-                <SparkIcon size="rail" /> {t('settings.agentTitle')}
-              </TabsTrigger>
+              {nativeAI && (
+                <TabsTrigger value="agent">
+                  <SparkIcon size="rail" /> {t('settings.agentTitle')}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="fonts">
                 <TextIcon size="rail" /> {t('settings.fontsTitle')}
               </TabsTrigger>
-              <TabsTrigger value="keys">
-                <KeyIcon size="rail" /> {t('settings.keysTitle')}
-              </TabsTrigger>
+              {nativeAI && (
+                <TabsTrigger value="keys">
+                  <KeyIcon size="rail" /> {t('settings.keysTitle')}
+                </TabsTrigger>
+              )}
               {hostedProducts && (
                 <TabsTrigger value="webhooks">
                   <BellIcon size="rail" /> {t('settings.webhooksTitle')}
@@ -247,7 +255,7 @@ export function Settings() {
 
           {pane === 'general' ? (
             <GeneralSettings />
-          ) : pane === 'agent' ? (
+          ) : pane === 'agent' && nativeAI ? (
             <>
               {/* the free-task count, while no connection of the person's own carries the agent */}
               {meter && (
@@ -270,7 +278,7 @@ export function Settings() {
             </>
           ) : pane === 'fonts' ? (
             <FontLibrary />
-          ) : pane === 'keys' ? (
+          ) : pane === 'keys' && nativeAI ? (
             <AgentKeys />
           ) : pane === 'webhooks' ? (
             <Webhooks />

@@ -1,3 +1,4 @@
+import { nativeAI } from '../../zaboka/designPolicy'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { AgentTask } from '../../shared/types'
 import { canEditOpenCanvas, useStore } from '../lib/store'
@@ -74,7 +75,9 @@ export function ActivityPanel({
   const setTab = useStore((s) => s.setPanelTab)
   const canEdit = useStore(canEditOpenCanvas)
   /* someone who cannot edit sees the comments only (PanelTabButtons) */
-  const tab = useStore((s) => (canEdit ? s.panelTab : 'comments'))
+  const tab = useStore((s) =>
+    canEdit ? (!nativeAI && ['tasks', 'memory'].includes(s.panelTab) ? 'activity' : s.panelTab) : 'comments',
+  )
   const [, tick] = useState(0)
   const openThreads = useOpenThreadCount()
   const working = useStore((s) => s.tasks.filter((t) => t.agentName && !t.endedAt && !t.failedAt).length)
@@ -101,7 +104,7 @@ export function ActivityPanel({
       <PanelTabsRoot value={tab} onValueChange={(next) => setTab(next as typeof tab)}>
         <PanelHeader className="pl-2">
           <PanelTabs aria-label={t('panels.activityPanelAria')}>
-            {canEdit && (
+            {canEdit && nativeAI && (
               <PanelIconTab value="tasks" icon={<SparkIcon />} title={t('panels.activityAgents')}>
                 {t('panels.activityAgents')}
                 {working > 0 && (
@@ -133,9 +136,11 @@ export function ActivityPanel({
                 <PanelIconTab value="activity" icon={<PulseIcon />} title={t('panels.activityActivity')}>
                   {t('panels.activityActivity')}
                 </PanelIconTab>
-                <PanelIconTab value="memory" icon={<BookOpenIcon />} title={t('panels.activityMemoryTitle')}>
-                  {t('panels.activityMemory')}
-                </PanelIconTab>
+                {nativeAI && (
+                  <PanelIconTab value="memory" icon={<BookOpenIcon />} title={t('panels.activityMemoryTitle')}>
+                    {t('panels.activityMemory')}
+                  </PanelIconTab>
+                )}
               </>
             )}
           </PanelTabs>
@@ -143,26 +148,30 @@ export function ActivityPanel({
         </PanelHeader>
         {/* the Agents tab is a column: what the agents are doing on top, the
             conversation with them under it, the prompt composer docked below */}
-        <PanelTabPanel value="tasks" className={tabEnter}>
-          {hasChat ? (
-            <AgentsSplit />
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-              <RecentTasks />
-            </div>
-          )}
-          {/* the composer briefs agents to change frames: editors only */}
-          {canEdit && <PromptBar canvasId={canvasId} />}
-        </PanelTabPanel>
+        {nativeAI && (
+          <PanelTabPanel value="tasks" className={tabEnter}>
+            {hasChat ? (
+              <AgentsSplit />
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                <RecentTasks />
+              </div>
+            )}
+            {/* the composer briefs agents to change frames: editors only */}
+            {canEdit && <PromptBar canvasId={canvasId} />}
+          </PanelTabPanel>
+        )}
         <PanelTabPanel value="comments" className={tabEnter}>
           <CommentsPanel />
         </PanelTabPanel>
         <PanelTabPanel value="activity" className={tabEnter}>
           <ActivityList />
         </PanelTabPanel>
-        <PanelTabPanel value="memory" className={tabEnter}>
-          <MemoryPanel />
-        </PanelTabPanel>
+        {nativeAI && (
+          <PanelTabPanel value="memory" className={tabEnter}>
+            <MemoryPanel />
+          </PanelTabPanel>
+        )}
       </PanelTabsRoot>
     </Panel>
   )
@@ -392,7 +401,7 @@ function RecentTaskRow({ task }: { task: AgentTask }) {
         >
           {task.status}
         </span>
-        {running && task.queuedBy && canvasId && canEdit && (
+        {nativeAI && running && task.queuedBy && canvasId && canEdit && (
           <Button
             variant="ghost"
             size="pill"
@@ -414,7 +423,7 @@ function RecentTaskRow({ task }: { task: AgentTask }) {
               {reason}
             </span>
           )}
-          {task.queuedBy && canvasId && canEdit && (
+          {nativeAI && task.queuedBy && canvasId && canEdit && (
             <Button
               variant="danger-solid"
               size="pill"

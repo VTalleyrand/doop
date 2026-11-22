@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { designActionAllowed, designRouteAllowed, hostedProducts } from '../zaboka/designPolicy'
+import { designActionAllowed, designRouteAllowed, hostedProducts, nativeAI } from '../zaboka/designPolicy'
 
 describe('local Design entry points', () => {
   it.each([
@@ -13,6 +13,8 @@ describe('local Design entry points', () => {
     '/settings?pane=account',
     '/settings?pane=plan',
     '/settings?pane=webhooks',
+    '/settings?pane=agent',
+    '/settings?pane=keys',
     '/w/team?pane=members',
     '/w/team?pane=billing',
     '/install/codex',
@@ -33,6 +35,8 @@ describe('local Design entry points', () => {
   })
   it('keeps design commands and disables commercial commands', () => {
     expect(hostedProducts).toBe(false)
+    expect(nativeAI).toBe(false)
+    expect(designActionAllowed('ask-agent')).toBe(false)
     for (const id of ['present', 'create-component', 'frame-selection', 'export', 'layers-panel'])
       expect(designActionAllowed(id)).toBe(true)
     expect(designActionAllowed('upgrade')).toBe(false)

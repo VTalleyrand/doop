@@ -1,7 +1,9 @@
 /** Local Design product boundary. Keep upstream subsystems available to the local door. */
 export const hostedProducts = false
+/** Native provider UI stays dormant in Zaboka; MCP is owned by the server/door. */
+export const nativeAI = false
 export function designSettingsPaneAllowed(pane: string): boolean {
-  return !['account', 'plan', 'webhooks'].includes(pane)
+  return !['account', 'plan', 'webhooks'].includes(pane) && (nativeAI || !['agent', 'keys'].includes(pane))
 }
 export function designWorkspacePaneAllowed(pane: string): boolean {
   return ['fonts', 'libraries'].includes(pane)
@@ -15,5 +17,5 @@ export function designRouteAllowed(value: string): boolean {
   return false
 }
 export function designActionAllowed(id: string): boolean {
-  return !['upgrade', 'customer-support'].includes(id)
+  return !['upgrade', 'customer-support'].includes(id) && (nativeAI || id !== 'ask-agent')
 }

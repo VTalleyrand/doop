@@ -174,6 +174,8 @@ describe.skipIf(!findBrowserPath())('authenticated local Design acceptance', () 
       '/settings?pane=account',
       '/settings?pane=plan',
       '/settings?pane=webhooks',
+      '/settings?pane=agent',
+      '/settings?pane=keys',
       `/w/${fixture.workspaceId}?pane=members`,
       `/w/${fixture.workspaceId}?pane=billing`,
       '/install/codex',
@@ -186,9 +188,11 @@ describe.skipIf(!findBrowserPath())('authenticated local Design acceptance', () 
       await page.goto(web.origin + route, { waitUntil: 'domcontentloaded' })
       await page.waitForSelector('::-p-text(New canvas)')
       expect(await page.$('button[aria-label="Present prototype"]')).toBeNull()
+      expect(await page.$('textarea')).toBeNull()
       await capture(`hidden-${index}`)
     }
     for (const [index, route] of [
+      '/settings',
       '/settings?pane=appearance',
       '/settings?pane=fonts',
       `/w/${fixture.workspaceId}?pane=fonts`,
@@ -205,9 +209,15 @@ describe.skipIf(!findBrowserPath())('authenticated local Design acceptance', () 
           ? '::-p-text(Component libraries)'
           : route.includes('appearance')
             ? '::-p-text(Appearance)'
-            : '::-p-text(Fonts)',
+            : route === '/settings'
+              ? '::-p-text(General)'
+              : '::-p-text(Fonts)',
       )
       expect(new URL(page.url()).pathname).toBe(new URL(web.origin + route).pathname)
+      if (route.startsWith('/settings')) {
+        const text = await page.$eval('body', (el) => el.textContent)
+        expect(text).not.toMatch(/Agent keys|Connect Claude|Connect Codex|Model account/)
+      }
       await capture(`retained-${index}`)
     }
     if (captureDir)
