@@ -310,30 +310,53 @@ describe.skipIf(!findBrowserPath())('drawing on the canvas', { timeout: 30_000 }
       updatedAt: 0,
       html: '<div data-doop-drawing="rectangle" data-name="Rectangle" style="position:fixed;left:60px;top:60px;width:100px;height:100px;background:red"></div>',
     }
+    // Register before the runtime so the original request is actually held,
+    // rather than processed once before a later listener replays it.
+    await page.evaluateOnNewDocument(() => {
+      window.addEventListener(
+        'message',
+        function hold(event) {
+          if (event.data?.type !== 'doop:drawing-hit') return
+          event.stopImmediatePropagation()
+          window.removeEventListener('message', hold, true)
+          document.body.dataset.hitHeld = 'true'
+          window.addEventListener(
+            'release-drawing-hit',
+            () => {
+              window.dispatchEvent(new MessageEvent('message', { data: event.data, source: event.source }))
+              document.body.dataset.replied = 'true'
+            },
+            { once: true },
+          )
+        },
+        true,
+      )
+    })
+    // Deliberately separate destination insertion from source cleanup.
+    await page.evaluate(() => {
+      const fetch = window.fetch.bind(window)
+      window.fetch = async (input, init) => {
+        const url = input instanceof Request ? input.url : String(input)
+        const method = init?.method ?? (input instanceof Request ? input.method : 'GET')
+        if (new URL(url, location.href).pathname === '/api/frames/slow' && method === 'PATCH') {
+          document.body.dataset.cleanupHeld = 'true'
+          await new Promise<void>((resolve) =>
+            window.addEventListener('release-source-cleanup', () => resolve(), { once: true }),
+          )
+        }
+        return fetch(input, init)
+      }
+    })
     await seedFrames([source])
     const rect = await visibleDrawing('Slow')
     const iframe = (await (await page.$('iframe[title="Slow"]'))!.contentFrame())!
-    await iframe.evaluate(() =>
-      window.addEventListener(
-        'message',
-        (event) => {
-          if (event.data?.type !== 'doop:drawing-hit' || event.data.delayed) return
-          event.stopImmediatePropagation()
-          setTimeout(() => {
-            window.dispatchEvent(
-              new MessageEvent('message', { data: { ...event.data, delayed: true }, source: event.source }),
-            )
-            document.body.dataset.replied = 'true'
-          }, 250)
-        },
-        true,
-      ),
-    )
     await page.mouse.move(rect.x + 40, rect.y + 40)
     await page.mouse.down()
     await page.mouse.move(900, 600)
+    await iframe.waitForFunction(() => document.body.dataset.hitHeld === 'true')
     if (cancel) await page.keyboard.press('Escape')
     await page.mouse.up()
+    await iframe.evaluate(() => window.dispatchEvent(new Event('release-drawing-hit')))
     await iframe.waitForFunction(() => document.body.dataset.replied === 'true')
     if (cancel) {
       await page.evaluate(
@@ -342,6 +365,16 @@ describe.skipIf(!findBrowserPath())('drawing on the canvas', { timeout: 30_000 }
       expect(saved).toEqual([source])
       expect(await page.$('iframe[title="Moving drawing"]')).toBeNull()
     } else {
+      await waitForFrames(2)
+      await page.waitForFunction(() => document.body.dataset.cleanupHeld === 'true')
+      await page.evaluate(() => window.dispatchEvent(new Event('release-source-cleanup')))
+      // Two frames only proves the destination exists. The source PATCH is
+      // deliberately later, so wait for its store update before taking a snapshot.
+      await page.waitForFunction(
+        (before) => window.drawingHarness.state().frames.find((frame) => frame.id === 'slow')!.html !== before,
+        {},
+        source.html,
+      )
       const result = await waitForFrames(2)
       expect(result[0]!.html).not.toContain('data-doop-drawing')
       expect(result[1]).toMatchObject({ width: 100, height: 100, name: 'Rectangle' })
