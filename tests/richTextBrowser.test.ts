@@ -179,7 +179,12 @@ describe.skipIf(!findBrowserPath())('rich text editing', { timeout: 30_000 }, ()
     // Past the typing debounce: the conversion was saved once, not again by the space that made it.
     await new Promise((resolve) => setTimeout(resolve, 500))
     expect(
-      await page.evaluate(() => (window as unknown as Fixture).messages.filter((m) => m.type === 'doop:edited').length),
+      await page.evaluate((tag) => {
+        const edits = (window as unknown as Fixture).messages.filter((m) => m.type === 'doop:edited')
+        // Typing the marker may save before the space arrives on a busy runner.
+        // Only the conversion and later saves belong to this assertion.
+        return edits.slice(edits.findIndex((m) => m.html?.includes(`<${tag}`))).length
+      }, tag),
     ).toBe(1)
     await page.keyboard.type('Two')
     expect(await frame.$$eval(`#text ${tag} li`, (items) => items.map((li) => li.textContent))).toEqual(['Two'])
