@@ -1,3 +1,4 @@
+import { hostedProducts, designWorkspacePaneAllowed } from '../../zaboka/designPolicy'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LibraryPublishPolicy, WorkspaceDetail, WorkspaceRole, WorkspaceSummary } from '../../shared/types'
 import { billedSeats, formatUsd, TEAM_SEAT_PRICE, type WorkspaceStatus } from '../../shared/billing'
@@ -175,7 +176,7 @@ export function Workspace({ workspaceId }: { workspaceId: string }) {
   /* billing and settings are for the owner and admins; anyone else asking
      for them (a stale link) sees the people */
   const panes = workspacePanesFor(ws?.role)
-  const pane: Pane = !ws || panes.includes(picked) ? picked : 'members'
+  const pane: Pane = designWorkspacePaneAllowed(picked) && panes.includes(picked) ? picked : 'fonts'
 
   if (missing) {
     return (
@@ -220,13 +221,7 @@ export function Workspace({ workspaceId }: { workspaceId: string }) {
           <div className="flex items-start gap-4 md:items-end">
             <div className="min-w-0">
               <DashTitle className="truncate">{ws?.name ?? '…'}</DashTitle>
-              <DashSubtitle>
-                {ws
-                  ? `${t('workspace.memberCount', { count: ws.memberCount })} · ${t('workspace.canvasCount', {
-                      count: ws.canvasCount,
-                    })} · ${ws.billing.enabled ? t(STATUS_LABEL[ws.status]) : t('workspace.selfHostedIncluded')}`
-                  : '…'}
-              </DashSubtitle>
+              <DashSubtitle>{ws ? t('workspace.canvasCount', { count: ws.canvasCount }) : '…'}</DashSubtitle>
             </div>
           </div>
 
@@ -240,7 +235,7 @@ export function Workspace({ workspaceId }: { workspaceId: string }) {
             </TabsList>
           </Tabs>
 
-          {ws && ws.billing.enabled && !ws.active && (
+          {hostedProducts && ws && ws.billing.enabled && !ws.active && (
             <Callout className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
               <span className="flex-1">
                 <b>{t('workspace.noPlanYet')}</b> {t('workspace.noPlanBody')}
@@ -253,7 +248,7 @@ export function Workspace({ workspaceId }: { workspaceId: string }) {
               )}
             </Callout>
           )}
-          {ws && ws.status === 'past_due' && (
+          {hostedProducts && ws && ws.status === 'past_due' && (
             <Callout tone="error" className="mt-4">
               <b>{t('workspace.paymentFailed')}</b> {t('workspace.paymentFailedBody')}
             </Callout>
@@ -283,7 +278,7 @@ export function Workspace({ workspaceId }: { workspaceId: string }) {
         </DashContent>
       </DashMain>
 
-      {naming && ws && (
+      {hostedProducts && naming && ws && (
         <NameWorkspaceModal
           workspace={ws}
           onClose={() => {
