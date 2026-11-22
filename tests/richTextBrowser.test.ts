@@ -163,7 +163,7 @@ describe.skipIf(!findBrowserPath())('rich text editing', { timeout: 30_000 }, ()
     await render('<p id="text" style="margin:0;font:24px Arial">One</p>')
     await page.keyboard.press('End')
     await page.keyboard.press('Enter')
-    await page.waitForFunction(() => (window as unknown as Fixture).messages.some((m) => m.type === 'doop:edited'))
+    await new Promise((resolve) => setTimeout(resolve, 500))
     await page.evaluate(() => {
       ;(window as unknown as Fixture).messages = []
     })

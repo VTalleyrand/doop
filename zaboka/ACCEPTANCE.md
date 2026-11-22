@@ -61,28 +61,35 @@ commands, exit codes, baseline revision, and SHA-256 hashes of all 22 PNGs.
 The final delivery reports the exact artifact paths. Earlier logs above are
 historical evidence, not retries that establish a green suite.
 
-## Recovery decisions (2026-11-22)
+## Verification recovery (2026-11-22)
 
-The recovery keeps every assertion, retry count and timeout intact. Locator clicks
-wait for actionable comment pins and visibility controls; polling the copied-node
-count waits for the iframe DOM to catch up with the saved drawing. Rich-text setup
-waits for its edit event rather than assuming a 500ms scheduling window. The original
-count of **all** edit messages remains exactly one; filtering to list-only messages
-was rejected because it could hide an extra save.
+The earlier green recovery claim was not durable: the subsequent saved full check
+(`/tmp/doop-recovery/full-check.log`, exit 1) failed Pages split: expected 105 to
+be close to 120 at `tests/pagesSplitBrowser.test.ts:114`. Historical focused
+passes must not be presented as full verification.
 
-`zaboka/testPolicy.ts` caps Vitest at four workers to leave resources for Chromium
-renderers and the fixture server on the shared Mini. Earlier unrestricted runs
-showed browser timing failures; this limits contention without retrying tests or
-changing their requirements. Clipboard tests retain their existing serialization.
+Unrelated editor test edits and the worker cap have been restored to integration
+base `2e7636860960fdda9c80ec1014b11994f495c214`. In particular, the original
+geometry undo assertions and history remain intact. No sleeps, retries, increased
+timeouts or skips were introduced. Resource contention has not been measured well
+enough to justify shipping a worker cap with this product policy.
 
-The complete recovery command passed: 391 test files and 3,680 tests passed;
-one file and 23 tests were skipped by existing conditions. Typecheck and build
-passed. Earlier baseline list-shortcut failures are historical and did not recur
-with the event-based setup wait and original assertions.
+Fresh evidence lives in `/tmp/doop-resume-evidence/`; its report records commands,
+exit codes, baseline comparison and capture provenance. The isolated comparison
+checkout is `/tmp/doop-resume-base`, at the unchanged integration base. Runs use
+the same installed dependency tree, browser and original Vitest configuration,
+sequentially on the same machine. Background host load is not experimentally
+controlled; a failure recurring on both revisions establishes baseline presence,
+not a timing diagnosis.
 
-Both complete saved hook logs (`/tmp/doop-final-commit.log` and
-`/tmp/doop-hook-diagnostic.log`) show Prettier and all other tasks succeeding.
-They establish no failed-hook cause. A truncated progress display alone cannot
-identify a Prettier failure. Recovery records the full normal commit output and
-exit status without bypassing hooks. Fresh revision-bound checks and captures
-are recorded under `/tmp/doop-recovery/` after committing.
+The direct inherited staged hook (`bunx lint-staged`) exited 0: oxlint, eslint
+and Prettier all passed. There were no actual lint diagnostics. Historical failure
+output is unavailable; no specific lint cause can honestly be claimed. Hooks are
+retained. Zaboka CLI skill/check access returned “no credential in this environment,
+so there is nobody to act as”; no credential recovery or live owner data was used.
+
+Policy remains centralized in `zaboka/designPolicy.ts`. Upstream UI files contain
+entry-point guards; server authorization and dormant hosted implementations remain
+upstream. The final diff excludes editor behavior/test-runner repairs, reducing
+future upstream conflicts. Route/menu/dialog entry points listed in README remain
+the deliberate upstream merge review burden.

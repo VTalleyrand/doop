@@ -2,7 +2,6 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
-import { designTestWorkers } from './zaboka/testPolicy'
 
 /* Dev ports. The defaults are the only ones anyone normally needs; the env
    overrides exist so a second worktree can run its own pair without fighting
@@ -26,14 +25,13 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/.claude/**'],
     setupFiles: ['tests/setup.ts'],
     globalSetup: ['tests/globalSetup.ts'],
-    // Leave CPU and memory for Chromium's renderers and the fixture server.
-    maxWorkers: designTestWorkers,
     projects: [
       { test: { name: 'parallel', exclude: clipboardTests } },
       // Browser contexts share the system clipboard, so these files must run one at a time.
       { test: { name: 'clipboard', include: clipboardTests, fileParallelism: false } },
     ],
-    // Closing a Chromium context can outlast the default hook timeout.
+    /* seven files drive a real Chromium; closing one under a full parallel
+       run can outlast the 10s default */
     hookTimeout: 30_000,
   },
   /* Error tracking resolves minified stack frames through the .map next to

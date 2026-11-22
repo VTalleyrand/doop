@@ -818,7 +818,7 @@ describe.skipIf(!findBrowserPath())('element design controls', () => {
     await expect.poll(() => saved.html).toContain('overflow: visible')
     await page.click('[aria-label="Hide element"]')
     await frame.waitForFunction(() => getComputedStyle(document.querySelector('#paint')!).visibility === 'hidden')
-    await page.locator('[aria-label="Show element"]').click()
+    await page.click('[aria-label="Show element"]')
     await frame.waitForFunction(() => getComputedStyle(document.querySelector('#paint')!).visibility === 'visible')
     await selectLayer('#modern')
     await page.waitForFunction(

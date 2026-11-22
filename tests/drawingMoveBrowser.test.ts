@@ -464,11 +464,7 @@ describe.skipIf(!findBrowserPath())('drawing on the canvas', { timeout: 30_000 }
     /* the source never changed: the original is still there, in its place */
     expect(saved.find((f) => f.id === 'layers')!.html).toBe(source.html)
     expect(await visibleDrawing('Layers', '#rect')).toEqual(before)
-    await expect
-      .poll(
-        async () => (await (await (await page.$('iframe[title="Layers"]'))!.contentFrame())!.$$('#rect-copy')).length,
-      )
-      .toBe(0)
+    expect(await (await (await page.$('iframe[title="Layers"]'))!.contentFrame())!.$$('#rect-copy')).toHaveLength(0)
     await page.evaluate(() => window.drawingHarness.undo())
     if (onto === 'canvas') await expect.poll(() => saved.length).toBe(1)
     else await expect.poll(() => saved.find((f) => f.id === 'other')!.html).toBe(other.html)
