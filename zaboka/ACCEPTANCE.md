@@ -128,3 +128,27 @@ Bounded setup fix: resume the run through Zaboka with its normal turn-scoped CLI
 credential injected, then request the configured check and revision-bound UI
 runner scenario. Do not copy owner credentials or fabricate a recorded pass.
 Local captures are preparatory artifacts and cannot replace runner review.
+
+## Controlled drawing completion and export evidence
+
+The delayed-hit regression test now intercepts before the iframe runtime starts
+and releases the request explicitly after pointer release/cancellation. It also
+holds source cleanup after destination creation. Frame count is an intermediate
+state, so the test waits for the source store update before checking the original
+negative HTML and destination geometry assertions. The same held-cleanup experiment
+reproduced the count-only assertion failure on integration `2e76368` and the task
+revision, with two workers; corrected delayed-hit cases passed on both.
+
+Authenticated acceptance now also renames a frame through the Layers tree, checks
+persistence after reload, opens PDF export, and verifies the real export response
+starts with `%PDF-`. Representative additional captures are
+`03b-persisted-frame-edit.png`, `05-export-dialog.png`, and
+`06-export-completed.png`. Capture hashes and check exit codes are recorded outside
+the repository against the final checked commit. These captures still use the
+isolated production web UI, not the native Design shell or its live data.
+
+The PDF assertion observes a clone of the application's real fetch response.
+CDP reported an empty body for the consumed download, while the browser clone
+contained the PDF bytes and the application displayed its ready notice. This
+test-only observation sends no extra export request and does not mock the server.
+The native OS save dialog and a file saved to disk remain outside this capture.

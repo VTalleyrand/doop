@@ -35,6 +35,7 @@ describe.skipIf(!findBrowserPath())('authenticated local Design acceptance', () 
   afterAll(async () => {
     await web?.close()
     server?.stop()
+    await server?.stopped
   })
 
   it('captures hidden entry points and retains persisted canvas editing', async () => {
@@ -67,7 +68,7 @@ describe.skipIf(!findBrowserPath())('authenticated local Design acceptance', () 
       })
       const workspace = await post('/api/workspaces', { name: 'Synthetic Project' })
       const canvas = await post('/api/canvases', { name: 'Acceptance document', workspaceId: workspace.id })
-      await post(`/api/canvases/${canvas.id}/frames`, {
+      const frame = await post(`/api/canvases/${canvas.id}/frames`, {
         name: 'Acceptance board',
         x: 0,
         y: 0,
@@ -75,7 +76,7 @@ describe.skipIf(!findBrowserPath())('authenticated local Design acceptance', () 
         height: 400,
         html: '<body style="background:#eee;padding:40px"><h1>Synthetic design</h1><button>Continue</button></body>',
       })
-      return { canvasId: canvas.id, workspaceId: workspace.id }
+      return { canvasId: canvas.id, workspaceId: workspace.id, frameId: frame.id }
     })
     const canvasUrl = `${web.origin}/c/${fixture.canvasId}`
     await page.goto(`${canvasUrl}?connect=1`)
@@ -109,9 +110,60 @@ describe.skipIf(!findBrowserPath())('authenticated local Design acceptance', () 
     await capture('03-persisted-page-edit')
     // Return to the board's page before presenting it.
     await page.click('[data-page-id]:first-child button')
+    await page.locator(`[data-row-key="${fixture.frameId}"]`).click({ button: 'right' })
+    await page.waitForSelector('[role="menu"]')
+    await page.locator('[role="menuitem"]::-p-text(Rename)').click()
+    await page.waitForSelector(`[data-row-key="${fixture.frameId}"] input`)
+    await page.type(`[data-row-key="${fixture.frameId}"] input`, 'Edited acceptance board')
+    const renamed = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === `/api/frames/${fixture.frameId}` &&
+        response.request().method() === 'PATCH',
+    )
+    await page.keyboard.press('Enter')
+    expect((await (await renamed).json()).name).toBe('Edited acceptance board')
+    await page.reload()
+    await page.waitForSelector(`[data-row-key="${fixture.frameId}"]`)
+    expect(
+      await page.evaluate(async ({ canvasId, frameId }) => {
+        const canvas = await (await fetch(`/api/canvases/${canvasId}`)).json()
+        return canvas.frames.find((frame: { id: string; name: string }) => frame.id === frameId).name
+      }, fixture),
+    ).toBe('Edited acceptance board')
+    await page.locator(`[data-row-key="${fixture.frameId}"]`).click()
+    await capture('03b-persisted-frame-edit')
     await page.click('button[aria-label="Present prototype"]')
     await capture('04-prototype')
     await page.keyboard.press('Escape')
+    await page.locator('button[title="Export frames as a PDF"]').click()
+    await page.waitForSelector('[role="group"][aria-label="Frames to export"]')
+    await capture('05-export-dialog')
+    // Observe the application's real response without issuing a second render.
+    // CDP may discard a response body once the blob download consumes it.
+    await page.evaluate(() => {
+      const fetch = window.fetch.bind(window)
+      window.fetch = async (input, init) => {
+        const response = await fetch(input, init)
+        if (new URL(response.url).pathname.endsWith('/export.pdf')) {
+          const bytes = await response.clone().arrayBuffer()
+          document.body.dataset.exportPrefix = new TextDecoder().decode(bytes.slice(0, 5))
+          document.body.dataset.exportBytes = String(bytes.byteLength)
+        }
+        return response
+      }
+    })
+    const exported = page.waitForResponse(
+      (response) => new URL(response.url()).pathname.endsWith('/export.pdf') && response.request().method() === 'GET',
+    )
+    await page.locator('button::-p-text(Download PDF)').click()
+    const pdf = await exported
+    expect(pdf.status()).toBe(200)
+    expect(pdf.headers()['content-type']).toContain('application/pdf')
+    await page.waitForFunction(() => document.body.dataset.exportPrefix !== undefined)
+    expect(await page.evaluate(() => document.body.dataset.exportPrefix)).toBe('%PDF-')
+    expect(await page.evaluate(() => Number(document.body.dataset.exportBytes))).toBeGreaterThan(5)
+    await page.waitForSelector('::-p-text(“Edited acceptance board.pdf” is ready)')
+    await capture('06-export-completed')
     for (const [index, route] of [
       '/auth',
       '/admin',
