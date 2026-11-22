@@ -286,13 +286,9 @@ describe.skipIf(!findBrowserPath())('drawing on the canvas', { timeout: 30_000 }
   )(
     'keeps fast layer drags and cancellation correct while $message is delayed (cancel: $cancel)',
     async ({ message, cancel }) => {
-      const source = layerFrame(rectangle)
-      await seedFrames([source])
-      await page.evaluate(() => window.drawingHarness.viewport({ x: 40, y: 20, zoom: 1 }))
-      const before = await visibleDrawing('Layers', '#rect')
-      const iframe = (await (await page.$('iframe[title="Layers"]'))!.contentFrame())!
-      await iframe.evaluate((message) => {
-        delete document.body.dataset.replied
+      // Register before the runtime: window message listeners at the target
+      // run in registration order, even when the later listener uses capture.
+      await page.evaluateOnNewDocument((message) => {
         window.addEventListener(
           'message',
           function delay(event) {
@@ -300,20 +296,33 @@ describe.skipIf(!findBrowserPath())('drawing on the canvas', { timeout: 30_000 }
               return
             event.stopImmediatePropagation()
             window.removeEventListener('message', delay, true)
-            setTimeout(() => {
-              window.dispatchEvent(new MessageEvent('message', { data: event.data, source: event.source }))
-              document.body.dataset.replied = 'true'
-            }, 250)
+            // Hold the request until the test has released/cancelled the pointer.
+            document.body.dataset.held = 'true'
+            window.addEventListener(
+              'release-delayed-move',
+              () => {
+                window.dispatchEvent(new MessageEvent('message', { data: event.data, source: event.source }))
+                document.body.dataset.replied = 'true'
+              },
+              { once: true },
+            )
           },
           true,
         )
       }, message)
+      const source = layerFrame(rectangle)
+      await seedFrames([source])
+      await page.evaluate(() => window.drawingHarness.viewport({ x: 40, y: 20, zoom: 1 }))
+      const before = await visibleDrawing('Layers', '#rect')
+      const iframe = (await (await page.$('iframe[title="Layers"]'))!.contentFrame())!
       const savesBefore = patchRequests
       await page.mouse.move(before.x + 40, before.y + 40)
       await page.mouse.down()
       await page.mouse.move(before.x + 100, before.y + 70, { steps: 3 })
+      await iframe.waitForFunction(() => document.body.dataset.held === 'true')
       if (cancel) await page.keyboard.press('Escape')
       await page.mouse.up()
+      await iframe.evaluate(() => window.dispatchEvent(new Event('release-delayed-move')))
       await iframe.waitForFunction(() => document.body.dataset.replied === 'true')
       await expect
         .poll(async () => (await visibleDrawing('Layers', '#rect')).x)

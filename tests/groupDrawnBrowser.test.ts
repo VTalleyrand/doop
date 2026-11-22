@@ -158,6 +158,11 @@ describe.skipIf(!findBrowserPath())('grouping drawn layers', { timeout: 30_000 }
     expect(style).not.toContain('flex-shrink')
     expect(style).not.toMatch(/translate|!important/)
     await iframe.waitForFunction(() => document.querySelector('#c')?.parentElement === document.body)
+    // Reparenting can already be visible in an intermediate drag preview;
+    // wait for the saved final position before measuring both axes.
+    await expect
+      .poll(() => iframe.$eval('#c', (el, x) => el.getBoundingClientRect().x - x, start.x))
+      .toBeCloseTo(200, -1)
     const end = await iframe.$eval('#c', (el) => el.getBoundingClientRect().toJSON() as DOMRect)
     expect(end.x - start.x).toBeCloseTo(200, -1)
     expect(end.y - start.y).toBeCloseTo(100, -1)

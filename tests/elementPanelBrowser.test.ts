@@ -705,6 +705,13 @@ describe.skipIf(!findBrowserPath())('element design controls', () => {
     const sibling = await frame.$eval('#sibling', (el) => el.getBoundingClientRect().toJSON())
     const originalTransform = await frame.$eval('#box', (el) => getComputedStyle(el).transform)
     const before = await frame.$eval('#box', (el) => (el as HTMLElement).style.translate)
+    // These edits deliberately form one undo group. Keep history time inside
+    // its coalescing window even when browser protocol calls take longer.
+    // Only this test's parent page clock is fixed; iframe timers still run.
+    await page.evaluate(() => {
+      const now = Date.now()
+      Date.now = () => now
+    })
     await number('X position', 40)
     await frame.waitForFunction(
       () =>
