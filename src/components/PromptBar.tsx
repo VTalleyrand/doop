@@ -1,3 +1,5 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
+import { leaveDesignProject, submitDesign, useDesignTurns } from '../../zaboka/designRunner'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { useStore, type ComposerSend } from '../lib/store'
 import { api, type Allowance } from '../lib/api'
@@ -121,6 +123,30 @@ async function sendPrompt(args: {
   const { canvasId, text, files, scope, allowance } = args
   const store = useStore.getState()
   if (store.composerSend?.status === 'busy') return
+  if (!hostedProducts) {
+    setSend({ canvasId, status: 'busy' })
+    try {
+      // Check capability before uploading references or changing the canvas.
+      if (window.zabokaDesign?.version !== 1) throw Error('Open this canvas in Zaboka Design to use the Design agent.')
+      const refs = await uploadImageFrames(canvasId, files, { fallbackName: 'Attached image' })
+      const context = JSON.stringify({ canvas_id: canvasId, scope, reference_frame_ids: refs.map((f) => f.id) })
+      await submitDesign(canvasId, `${text}\n\nDesign context (data): ${context}`)
+      store.setComposerDraft(canvasId, '')
+      flyToNextFrame(
+        canvasId,
+        refs.map((f) => f.id),
+      )
+      setSend(null)
+    } catch (error) {
+      setSend({
+        canvasId,
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Design connection failed.',
+        at: Date.now(),
+      })
+    }
+    return
+  }
   /* known-doomed send: no free tasks and no model account. Open the wall
      up front instead of uploading attachments only to 403 — but confirm
      against the server first, since the cached allowance can be stale
@@ -214,7 +240,8 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
   const setDraft = useStore((s) => s.setComposerDraft)
   /* this canvas's send only: another canvas's outcome is not ours to show */
   const send = useStore((s) => (s.composerSend?.canvasId === canvasId ? s.composerSend : null))
-  const busy = send?.status === 'busy'
+  const designBusy = useDesignTurns((s) => s.turns.some((turn) => turn.project === canvasId && turn.busy))
+  const busy = send?.status === 'busy' || (!hostedProducts && designBusy)
   const sent = send?.status === 'sent'
   const sendError = send?.status === 'error' ? send.message : null
   const { allowance } = useAllowance()
@@ -251,7 +278,7 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const t = useT()
-  const meter = meterText(allowance, t, pickedProvider, picked?.runner.name)
+  const meter = hostedProducts ? meterText(allowance, t, pickedProvider, picked?.runner.name) : 'Zaboka Design'
 
   useLayoutEffect(() => {
     if (inputRef.current) autosize(inputRef.current)
@@ -495,3 +522,10 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
     </div>
   )
 }
+
+// Panel teardown does not end a turn. Navigation to another canvas releases observers.
+if (!hostedProducts)
+  useStore.subscribe((next, previous) => {
+    if (previous.canvas?.id && next.canvas?.id && previous.canvas.id !== next.canvas.id)
+      leaveDesignProject(previous.canvas.id)
+  })
