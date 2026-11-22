@@ -110,6 +110,7 @@ describe.skipIf(!findBrowserPath())('the Pages and Layers split', () => {
   it('dragging the split up gives the Layers tree the room the Pages list gives up', async () => {
     const before = await sizes()
     await dragSplit(-120)
+    await expect.poll(async () => before.pages - (await sizes()).pages).toBeCloseTo(120, 0)
     const after = await sizes()
     expect(before.pages - after.pages).toBeCloseTo(120, 0)
     expect(after.tree - before.tree).toBeCloseTo(120, 0)

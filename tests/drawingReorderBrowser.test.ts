@@ -279,44 +279,46 @@ describe.skipIf(!findBrowserPath())('drawing on the canvas', { timeout: 30_000 }
     },
   )
 
-  it.each(['doop:move-hit', 'doop:style-gesture', 'doop:move-target'])(
-    'keeps fast layer drags and cancellation correct while %s is delayed',
-    async (message) => {
-      for (const cancel of [false, true]) {
-        const source = layerFrame(rectangle)
-        await seedFrames([source])
-        await page.evaluate(() => window.drawingHarness.viewport({ x: 40, y: 20, zoom: 1 }))
-        const before = await visibleDrawing('Layers', '#rect')
-        const iframe = (await (await page.$('iframe[title="Layers"]'))!.contentFrame())!
-        await iframe.evaluate((message) => {
-          delete document.body.dataset.replied
-          window.addEventListener(
-            'message',
-            function delay(event) {
-              if (event.data?.type !== message || (message === 'doop:style-gesture' && event.data.phase !== 'begin'))
-                return
-              event.stopImmediatePropagation()
-              window.removeEventListener('message', delay, true)
-              setTimeout(() => {
-                window.dispatchEvent(new MessageEvent('message', { data: event.data, source: event.source }))
-                document.body.dataset.replied = 'true'
-              }, 250)
-            },
-            true,
-          )
-        }, message)
-        const savesBefore = patchRequests
-        await page.mouse.move(before.x + 40, before.y + 40)
-        await page.mouse.down()
-        await page.mouse.move(before.x + 100, before.y + 70, { steps: 3 })
-        if (cancel) await page.keyboard.press('Escape')
-        await page.mouse.up()
-        await iframe.waitForFunction(() => document.body.dataset.replied === 'true')
-        await expect
-          .poll(async () => (await visibleDrawing('Layers', '#rect')).x)
-          .toBeCloseTo(before.x + (cancel ? 0 : 60), 0)
-        await expect.poll(() => patchRequests).toBe(savesBefore + (cancel ? 0 : 1))
-      }
+  it.each(
+    ['doop:move-hit', 'doop:style-gesture', 'doop:move-target'].flatMap((message) =>
+      [false, true].map((cancel) => ({ message, cancel })),
+    ),
+  )(
+    'keeps fast layer drags and cancellation correct while $message is delayed (cancel: $cancel)',
+    async ({ message, cancel }) => {
+      const source = layerFrame(rectangle)
+      await seedFrames([source])
+      await page.evaluate(() => window.drawingHarness.viewport({ x: 40, y: 20, zoom: 1 }))
+      const before = await visibleDrawing('Layers', '#rect')
+      const iframe = (await (await page.$('iframe[title="Layers"]'))!.contentFrame())!
+      await iframe.evaluate((message) => {
+        delete document.body.dataset.replied
+        window.addEventListener(
+          'message',
+          function delay(event) {
+            if (event.data?.type !== message || (message === 'doop:style-gesture' && event.data.phase !== 'begin'))
+              return
+            event.stopImmediatePropagation()
+            window.removeEventListener('message', delay, true)
+            setTimeout(() => {
+              window.dispatchEvent(new MessageEvent('message', { data: event.data, source: event.source }))
+              document.body.dataset.replied = 'true'
+            }, 250)
+          },
+          true,
+        )
+      }, message)
+      const savesBefore = patchRequests
+      await page.mouse.move(before.x + 40, before.y + 40)
+      await page.mouse.down()
+      await page.mouse.move(before.x + 100, before.y + 70, { steps: 3 })
+      if (cancel) await page.keyboard.press('Escape')
+      await page.mouse.up()
+      await iframe.waitForFunction(() => document.body.dataset.replied === 'true')
+      await expect
+        .poll(async () => (await visibleDrawing('Layers', '#rect')).x)
+        .toBeCloseTo(before.x + (cancel ? 0 : 60), 0)
+      await expect.poll(() => patchRequests).toBe(savesBefore + (cancel ? 0 : 1))
     },
   )
 
