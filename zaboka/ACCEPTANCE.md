@@ -60,3 +60,29 @@ commands, exit codes, baseline revision, and SHA-256 hashes of all 22 PNGs.
 `captures.json` retains the synthetic fixture IDs and ordered capture names.
 The final delivery reports the exact artifact paths. Earlier logs above are
 historical evidence, not retries that establish a green suite.
+
+## Recovery decisions (2026-11-22)
+
+The recovery keeps every assertion, retry count and timeout intact. Locator clicks
+wait for actionable comment pins and visibility controls; polling the copied-node
+count waits for the iframe DOM to catch up with the saved drawing. Rich-text setup
+waits for its edit event rather than assuming a 500ms scheduling window. The original
+count of **all** edit messages remains exactly one; filtering to list-only messages
+was rejected because it could hide an extra save.
+
+`zaboka/testPolicy.ts` caps Vitest at four workers to leave resources for Chromium
+renderers and the fixture server on the shared Mini. Earlier unrestricted runs
+showed browser timing failures; this limits contention without retrying tests or
+changing their requirements. Clipboard tests retain their existing serialization.
+
+The complete recovery command passed: 391 test files and 3,680 tests passed;
+one file and 23 tests were skipped by existing conditions. Typecheck and build
+passed. Earlier baseline list-shortcut failures are historical and did not recur
+with the event-based setup wait and original assertions.
+
+Both complete saved hook logs (`/tmp/doop-final-commit.log` and
+`/tmp/doop-hook-diagnostic.log`) show Prettier and all other tasks succeeding.
+They establish no failed-hook cause. A truncated progress display alone cannot
+identify a Prettier failure. Recovery records the full normal commit output and
+exit status without bypassing hooks. Fresh revision-bound checks and captures
+are recorded under `/tmp/doop-recovery/` after committing.

@@ -79,8 +79,7 @@ describe.skipIf(!findBrowserPath())('comment thread stacking', { timeout: 30_000
   })
 
   async function expectThreadOnTop() {
-    const pin = await page.waitForSelector('[title^="Tester:"]')
-    await pin!.click()
+    await page.locator('[title^="Tester:"]').click()
     const popover = await page.waitForSelector('[data-comment-popover]')
     await page.evaluate(() =>
       Promise.all(
@@ -122,7 +121,7 @@ describe.skipIf(!findBrowserPath())('comment thread stacking', { timeout: 30_000
 
   it('stays on its pin while the camera zooms and pans', async () => {
     await seed()
-    await (await page.waitForSelector('[title^="Tester:"]'))!.click()
+    await page.locator('[title^="Tester:"]').click()
     await page.waitForSelector('[data-comment-popover]')
     await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)))
     const before = await offsetFromPin()
@@ -142,7 +141,7 @@ describe.skipIf(!findBrowserPath())('comment thread stacking', { timeout: 30_000
     await seed(undefined, { ...COMMENT, x: 100, y: 285 })
     await page.evaluate(() => window.rulersHarness.select(['front']))
     const badge = (await (await page.waitForSelector('[data-frame-size]'))!.boundingBox())!
-    await (await page.waitForSelector('[title^="Tester:"]'))!.click()
+    await page.locator('[title^="Tester:"]').click()
     const popover = (await (await page.waitForSelector('[data-comment-popover]'))!.boundingBox())!
     await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)))
     const left = Math.max(badge.x, popover.x)
