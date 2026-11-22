@@ -422,12 +422,38 @@ describe.skipIf(!findBrowserPath())('drawing on the canvas', { timeout: 30_000 }
         }
         tick()
       })
-      await page.mouse.click(...(await over(120)))
-      /* before the click's 250ms probe could answer */
-      await page.waitForFunction(() => window.drawingHarness.state().selectedElement?.selector === '#b', {
-        timeout: 200,
+      // Hold the fallback probe's timer: selection must settle without it,
+      // regardless of how long Chromium takes to schedule the fast hit reply.
+      await page.evaluate(() => {
+        const original = window.setTimeout
+        const pending: (() => void)[] = []
+        window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: unknown[]) => {
+          if (delay === 250 && typeof handler === 'function') {
+            pending.push(() => handler(...args))
+            return 0
+          }
+          return original(handler, delay, ...args)
+        }) as typeof window.setTimeout
+        Object.assign(window, {
+          releaseProbeTimer: () => {
+            window.setTimeout = original
+            for (const run of pending) run()
+          },
+        })
       })
-      await new Promise((r) => setTimeout(r, 500))
+      await page.mouse.click(...(await over(120)))
+      await page.waitForFunction(() => window.drawingHarness.state().selectedElement?.selector === '#b')
+      await page.evaluate(() => {
+        Object.assign(window, { probeAnswered: false })
+        window.addEventListener('message', (event) => {
+          if (event.data?.type === 'doop:probe-result') Object.assign(window, { probeAnswered: true })
+        })
+        ;(window as unknown as { releaseProbeTimer: () => void }).releaseProbeTimer()
+      })
+      await page.waitForFunction(() => (window as unknown as { probeAnswered: boolean }).probeAnswered)
+      await page.evaluate(
+        () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+      )
       expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toEqual(['#a', '#b'])
     })
 
