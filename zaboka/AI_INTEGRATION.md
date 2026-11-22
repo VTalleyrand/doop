@@ -74,9 +74,12 @@ owning renderer, not the guest. `window.parent.postMessage` would not reach
 
 The existing native Doop paths are `PromptBar.sendPrompt` → `api.addCard` and
 `Home.promptCanvas` → create canvas → `api.addCard`. These remain disabled;
-no guessed bridge, credential forwarding or native-AI fallback was added.
-The canvas prompt replacement is **not implemented**. The host's own composer
-already uses the verified helper, but that is not a canvas submission bridge.
+no credential forwarding or native-AI fallback was added. A guest-only
+implementation of the **proposed** capability below now exists in
+`designBridge.ts` and `DesignPromptBar.tsx`. ActivityPanel mounts it only for
+editors with native AI disabled; it renders nothing unless the versioned host
+capability exists. This does not implement the missing host transport. The host's
+own composer already uses the verified helper, but that is not a canvas bridge.
 
 ## Companion change brief for a Zaboka developer
 
@@ -88,8 +91,9 @@ already uses the verified helper, but that is not a canvas submission bridge.
    in `src/extensions/registry.tsx`, and
    `packages/zaboka-design/ui/DesignApp.tsx`. Do not enable generic guest IPC,
    expose host credentials, or enable the capability on Coding preview tabs or
-   frame HTML. The companion developer must define and test the wire contract;
-   no guest message name or injected global is currently agreed or implemented.
+   frame HTML. Implement or revise the proposed guest API below, with matching
+   guest tests. Internal Electron IPC channel names are the companion's choice;
+   they are not exposed as a generic guest method.
 2. Bind requests to the owning Design surface and configured Doop origin.
    Resolve/validate the active canvas from the actual top-level guest `/c/<id>`
    URL. Reject or synchronize a mismatch with `DesignApp.project.id`: in-Doop
@@ -100,17 +104,96 @@ already uses the verified helper, but that is not a canvas submission bridge.
    `{ prompt, projectId }`. Reuse the existing receipt handler that sets
    `submittedBot` and revision, so accepted turns appear through `chatPanels`.
    Preserve the existing `/api/design/agent` plus bot-message sequence.
-4. Publish the guest capability name/version, payload, correlation and
-   success/error/disposal behavior for the Doop developer. Acknowledge only
-   after message acceptance, return `{ botId, taskId }`, prevent duplicate
-   in-flight sends, and specify uncertain/lost-ack retry behavior. Doop can then
-   restore a canvas composer that disables sends while pending, clears drafts
-   only on success, and retains text with an inline error on failure.
+4. Expose the proposed versioned capability below only from the scoped guest
+   preload. Acknowledge only after message acceptance. Deduplicate request IDs
+   before invoking the helper, propagate request failures, and reject pending
+   promises on surface disposal. Doop already retains drafts and request IDs
+   across panel remount and retry, but has no host-side deduplication authority.
 5. Add host fixtures covering correct canvas mapping, in-guest project changes,
    wrong origin/tab/subframe rejection, duplicate sends, request errors and
    surface disposal. Verify the production helper and receipt-to-chat-panel
    connection without a paid model call. Coordinate the Doop capability change
    with that merged host contract; keep the current native-AI gates.
+
+## Proposed guest request/ack contract (not a merged host capability)
+
+The reviewable Doop guest code expects this Design-only preload API:
+
+```ts
+window.zabokaDesign = {
+  version: 1,
+  submitPrompt(request: {
+    requestId: string // UUID generated once per attempted prompt
+    projectId: string // current Doop canvas ID; never a workspace ID or null
+    prompt: string // trimmed, nonempty, at most 100000 characters
+  }): Promise<
+    | { requestId: string; status: 'accepted'; botId: string; taskId: string }
+    | { requestId: string; status: 'rejected'; message: string }
+  >
+}
+```
+
+This is a **proposal implemented on the guest side only**, not a claim that
+Zaboka exposes this object. The promise pairs one request with an ack; all acks
+must echo its ID. Rejections preserve the raw draft and show an inline error.
+An exception/disconnect is acceptance-uncertain: the guest retains the ID for an
+explicit unchanged retry and never retries automatically. A matching accepted
+ack clears only the submitted draft; an edited replacement draft is preserved.
+An unsupported/missing capability renders no composer and never invokes Doop AI.
+Capability advertisement must exist before the guest React app mounts.
+
+Host requirements: bind IDs and deduplication to the owning Design surface and
+project, reject reuse with changed payload, converge concurrent/repeated accepted
+requests on the same receipt, and retain accepted results for the surface's
+lifetime. The guest retry ID survives panel remount, not a full page reload.
+If the helper's bot-message request may have committed before failing, do not
+blindly repeat it: reconcile with normal message state or return a stable
+acceptance-uncertain error directing the user to inspect chat. A known failure
+before message acceptance may be retried safely. These host-side guarantees
+remain required and unverified; the existing helper alone does not provide them.
+Never pass arbitrary guest bot/lane IDs, API paths, headers, or credentials.
+
+Security is enforced by the host, not the guest object check: allow only the
+Design-owned top-level webContents at the configured Doop origin and matching
+`/c/<id>`, reject subframes/Coding previews/unrelated windows and stale project
+requests, tear down listeners on close/navigation, and verify the owner renderer
+that receives the request. Invoke the existing authenticated helper in that
+renderer, update its receipt/chat panels, then reply. Do not weaken the generic
+embedded browser isolation to expose ordinary Desktop IPC to all pages.
+
+## Board handoff drafts (not created)
+
+No `zaboka` executable or connected task/board tool is available here. I could
+neither search existing cause cards nor create board items. These are reviewable
+filing briefs for the lead, not persisted board records; no coding run was started.
+
+**Companion substep**
+
+- Project: Zaboka
+- Title: Connect the Design guest prompt to its existing Design turn path
+- Parent metadata: `data.partOf = "d1a7e5e7-2026-4b21-9d01-000000000104"`
+- Scope and acceptance: the companion brief and proposed contract above, including
+  all inspected source paths, active-canvas/source binding, request deduplication,
+  existing helper/receipt/chat-panel routing, host fixture coverage and app-only
+  acceptance gap. Merge through Zaboka's own coding project; do not start from
+  this Doop project or bypass the coding-project restriction.
+
+**Single Backlog cause candidate — search before filing**
+
+- Project: Zaboka; status: Backlog; do not start.
+- Title: Allow linked companion work to be assigned through its own coding project
+- Evidence: the lead reports that assigning the necessary Zaboka companion from
+  this task failed with exactly **`Use the card’s coding project.`** No refusal
+  was reproduced here because no task tool is available.
+- Expected fix: provide a supported way to create/link a companion substep with
+  its own Zaboka coding-project association, then assign it under that project
+  while retaining `data.partOf` and dependency visibility. Preserve project
+  authorization; do not let a parent Doop task silently start code in Zaboka.
+- Acceptance: an authorized Doop parent can link a Zaboka child and start that
+  child through its own project; wrong-project starts still fail clearly. Search
+  existing Backlog causes for this refusal/workflow and reuse one if covered;
+  otherwise file exactly one candidate above. This branch cannot establish
+  whether an existing card already covers it.
 
 ## Verification and limits
 
@@ -132,8 +215,17 @@ project/prompt/lane payloads and `openLane` order. No network request, credentia
 or agent execution was involved. The script is in `$TMPDIR/doop-design-contract-check.mjs`.
 This is production-helper evidence, not a live turn or chat rendering check.
 
-The full suite was not repeated for this documentation-only follow-up. The live
-door, native Design window, guest-to-host submission, duplicate/failure draft
-behavior and real agent results in chat cards remain outside executed coverage.
+Guest implementation follow-up: `bun run typecheck`, `bun run build` and six
+focused test files passed (75 tests, exit 0). The command was
+`bun run test tests/designGuestBridge.test.tsx tests/localDesignAcceptance.test.ts tests/localDesignBrowser.test.ts tests/designPolicy.test.ts tests/promptComposer.test.tsx tests/mcp-tools.test.ts`.
+Vitest emitted a teardown warning about two Vite servers; the command exited 0.
+The build emitted its bundle-size warning. The full suite was not rerun for this
+narrow guest addition; the full-suite result above applies to `a8233e4`.
+The new fixture suite covers payload/project
+mapping, duplicate sends, draft retention, explicit retry correlation, edited
+replacement drafts, rejection/malformed acks, read-only/missing canvas, request
+limits, missing/unsupported host and inline UI error/remount/Enter submission.
+The real host transport, security/source binding, native Design window, live
+door and real agent results in chat cards remain outside executed coverage.
 The supplied orientation and engineering skills were used; the additional
 clean-code:typescript skill named by CLAUDE.md is not installed.

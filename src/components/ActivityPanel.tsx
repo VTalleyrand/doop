@@ -1,3 +1,4 @@
+import { DesignPromptBar } from '../../zaboka/DesignPromptBar'
 import { nativeAI } from '../../zaboka/designPolicy'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { AgentTask } from '../../shared/types'
@@ -173,6 +174,7 @@ export function ActivityPanel({
           </PanelTabPanel>
         )}
       </PanelTabsRoot>
+      {!nativeAI && canEdit && <DesignPromptBar canvasId={canvasId} />}
     </Panel>
   )
 }
