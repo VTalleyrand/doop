@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useState } from 'react'
 import type { WorkspaceDetail, WorkspaceSummary } from '../../shared/types'
 import { billedSeats, formatUsd, seatPerMonth, TEAM_SEAT_PRICE } from '../../shared/billing'
@@ -32,7 +33,7 @@ export const PERSONAL_WORKSPACE = '__personal__'
 
 /* ---- create ---- */
 
-export function CreateWorkspaceModal({
+function HostedCreateWorkspaceModal({
   onClose,
   onCreated,
 }: {
@@ -161,7 +162,7 @@ export function NameWorkspaceModal({
  *  pays through, or one of theirs still without a plan, or names a new one
  *  that checkout creates. It always ends the same way: a hosted Stripe
  *  Checkout. */
-export function UpgradeModal({
+function HostedUpgradeModal({
   workspaceId: pinned,
   reason,
   onClose,
@@ -481,3 +482,9 @@ export function MoveCanvasModal({
     </Modal>
   )
 }
+
+export const UpgradeModal = (props: Parameters<typeof HostedUpgradeModal>[0]) =>
+  hostedProducts ? <HostedUpgradeModal {...props} /> : null
+
+export const CreateWorkspaceModal = (props: Parameters<typeof HostedCreateWorkspaceModal>[0]) =>
+  hostedProducts ? <HostedCreateWorkspaceModal {...props} /> : null

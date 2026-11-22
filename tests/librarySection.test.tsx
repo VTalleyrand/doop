@@ -367,3 +367,9 @@ it('publishes the ticked components and leaves the rest', async () => {
   expect(mocks.publishLibrary).toHaveBeenCalledWith('canvas1', ['c1'])
   expect(onDone).toHaveBeenCalled()
 })
+
+// Preserve upstream library upsell coverage independently of the local product policy.
+vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
+  hostedProducts: true,
+}))

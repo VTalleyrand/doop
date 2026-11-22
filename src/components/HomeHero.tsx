@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
   DRAFT_OPTIONS,
@@ -259,7 +260,7 @@ export function HomeHero({
         />
         <div className="absolute inset-x-[54px] -top-[14px] flex h-[74px] items-start justify-center overflow-hidden pb-7 pt-[14px] [mask-image:linear-gradient(90deg,transparent,#000_14%,#000_86%,transparent)]">
           <div className="flex flex-none gap-3" onMouseLeave={() => setHovered(null)}>
-            {CHIPS.map((chip, i) => {
+            {CHIPS.filter((chip) => hostedProducts || !chip.action || chip.action === 'onImport').map((chip, i) => {
               const on = i === beamOn
               return (
                 <Chip

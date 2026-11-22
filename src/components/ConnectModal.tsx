@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { navigate } from '../App'
@@ -60,7 +61,7 @@ const agentName = (agent: AgentOption, t: Translate): string => ('name' in agent
 
 /** `canvasId` is optional: opened from the home dashboard there is no canvas to
  *  suggest a prompt for, and no presence connection to watch for an arrival. */
-export function ConnectModal({
+function HostedConnectModal({
   canvasId,
   onClose,
   initialAgent,
@@ -565,7 +566,7 @@ function MethodSwitch<T extends string>({
 /** Live connection status: flips the moment an outside (non-resident) agent
  *  joins this canvas's presence, so nobody is left wondering whether the
  *  OAuth dance actually worked. */
-export function AgentArrival({ name }: { name?: string }) {
+function HostedAgentArrival({ name }: { name?: string }) {
   const t = useT()
   const presences = useStore((s) => s.presences)
   const roster = useRoster()
@@ -585,3 +586,9 @@ export function AgentArrival({ name }: { name?: string }) {
     </span>
   )
 }
+
+export const ConnectModal = (props: Parameters<typeof HostedConnectModal>[0]) =>
+  hostedProducts ? <HostedConnectModal {...props} /> : null
+
+export const AgentArrival = (props: Parameters<typeof HostedAgentArrival>[0]) =>
+  hostedProducts ? <HostedAgentArrival {...props} /> : null

@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
@@ -84,7 +85,7 @@ function AppHero({ size }: { size: 'card' | 'sheet' }) {
 const PLATFORM_NAMES: Record<DesktopPlatform, string> = { macos: 'macOS', windows: 'Windows', linux: 'Linux' }
 
 /** The rail's desktop-app card, for a computer's browser. */
-export function NativeAppCard({ className }: { className?: string }) {
+function HostedNativeAppCard({ className }: { className?: string }) {
   const [platform] = useState(() => {
     const found = nativeAppPlatform()
     return found && found !== 'ios' && !desktopCardDismissed() ? found : null
@@ -154,7 +155,7 @@ const PROMPT_DELAY_MS = 1500
 /** The App Store sheet on an iPhone or iPad, once per fortnight at most.
  *  `held` keeps it back while another modal (the onboarding questions) is up
  *  or may still open. */
-export function IosAppPrompt({ held = false }: { held?: boolean }) {
+function HostedIosAppPrompt({ held = false }: { held?: boolean }) {
   const [due, setDue] = useState(false)
   const [closed, setClosed] = useState(false)
   useEffect(() => {
@@ -184,7 +185,7 @@ type IosAppSheetProps = {
   onGet?: () => void
 }
 
-export function IosAppSheet({ open, onOpenChange, onGet }: IosAppSheetProps) {
+function HostedIosAppSheet({ open, onOpenChange, onGet }: IosAppSheetProps) {
   const t = useT()
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -215,3 +216,12 @@ export function IosAppSheet({ open, onOpenChange, onGet }: IosAppSheetProps) {
     </Sheet>
   )
 }
+
+export const NativeAppCard = (props: Parameters<typeof HostedNativeAppCard>[0]) =>
+  hostedProducts ? <HostedNativeAppCard {...props} /> : null
+
+export const IosAppPrompt = (props: Parameters<typeof HostedIosAppPrompt>[0]) =>
+  hostedProducts ? <HostedIosAppPrompt {...props} /> : null
+
+export const IosAppSheet = (props: Parameters<typeof HostedIosAppSheet>[0]) =>
+  hostedProducts ? <HostedIosAppSheet {...props} /> : null

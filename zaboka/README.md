@@ -61,3 +61,33 @@ release upstream's own apps.
 3. Deploy once, sign up the local account through Doop's API with an `@zaboka.local` address, save it as
    `door/account.json` (`{ "name", "email", "password" }`, mode 600), create an agent key for it and save
    it as `door/agent-key`, then deploy again.
+
+## Local Design product policy
+
+`designPolicy.ts` owns the local UI boundary. `App` checks initial URLs and browser
+history; `navigate` checks in-app navigation. Only canvases, prototype presentation,
+local settings, and workspace fonts/libraries are admitted. Shared action-registry
+filtering covers the palette and native menus; dialog wrappers prevent startup or
+query-string state from opening sharing, installers, upgrades, or app promotions.
+The door still owns local authentication: the account session, cursor identity,
+comments and design APIs remain intact. A missing session asks users to reopen
+through the door instead of offering hosted authentication. This is a UI product
+boundary, not a replacement for server authorization. Upstream server subsystems
+remain available for local design and agent use.
+
+Surface ownership for upstream updates:
+
+- `src/App.tsx` / `src/lib/navigate.ts`: initial routes, history, authentication,
+  desktop callbacks, community, integrations, automations, admin and settings.
+- `src/lib/actions/registry.ts`: command palette, canvas menus and native menus.
+- `AppRail`, `DashShell`, `HomeHero`, `Home`, `Settings`, `CanvasPage`: visible
+  navigation, account actions, mobile actions and settings pane switches.
+- `ShareModal`, `ConnectModal`, `WorkspaceModals`, `UpgradeHost`: dialog entry
+  points, including query-string prompts and library upgrade paths.
+- `Onboarding`, `NativeAppPromo`, `UpdateCard`: startup and promotional surfaces.
+
+Dormant hosted installer and checkout implementations retain their upstream
+behavior tests with the hosted policy enabled only in those tests. Local tests exercise
+the policy and public editor entry points. This keeps upstream behavior covered
+without enabling those dialogs in Design. Workspace fonts and libraries remain
+available; workspace people, billing and server management do not.

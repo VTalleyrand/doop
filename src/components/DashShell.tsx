@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import * as React from 'react'
 import { authClient } from '../lib/auth'
 import { navigate } from '../App'
@@ -98,18 +99,20 @@ export function AccountMenu({
         </DropdownMenuLabel>
         {/* the plan is a workspace thing; this line says which side of it the
             account is on — a member of a live paid workspace is on Pro */}
-        <div className="mx-2.5 mb-2 flex items-center gap-[7px] text-caption text-ink-soft">
-          {me?.plan === 'team' ? (
-            <>
-              <Badge tone="accent">pro</Badge> {t('plans.proPlan')}
-            </>
-          ) : (
-            <>
-              <Badge>free</Badge> {t('plans.freePlan')}
-            </>
-          )}
-        </div>
-        {offersUpgrade(me) && (
+        {hostedProducts && (
+          <div className="mx-2.5 mb-2 flex items-center gap-[7px] text-caption text-ink-soft">
+            {me?.plan === 'team' ? (
+              <>
+                <Badge tone="accent">pro</Badge> {t('plans.proPlan')}
+              </>
+            ) : (
+              <>
+                <Badge>free</Badge> {t('plans.freePlan')}
+              </>
+            )}
+          </div>
+        )}
+        {offersUpgrade(me) && hostedProducts && (
           <DropdownMenuItem onSelect={() => openUpgrade({ source: 'account-menu' })}>
             <RocketIcon size="rail" /> {t('plans.upgradeToPro')}
           </DropdownMenuItem>
@@ -118,12 +121,12 @@ export function AccountMenu({
         <DropdownMenuItem onSelect={() => navigate('/settings')}>
           <GearIcon size="rail" /> {t('shell.settings')}
         </DropdownMenuItem>
-        {me?.admin && (
+        {me?.admin && hostedProducts && (
           <DropdownMenuItem onSelect={() => navigate('/admin')}>
             <ShieldIcon size="rail" /> {t('shell.admin')}
           </DropdownMenuItem>
         )}
-        {me?.billing && me.plan === 'team' && (
+        {me?.billing && me.plan === 'team' && hostedProducts && (
           <DropdownMenuItem asChild>
             <a href={PRIORITY_SUPPORT}>
               <MailIcon size="rail" /> {t('plans.prioritySupport')}
@@ -137,18 +140,20 @@ export function AccountMenu({
         </DropdownMenuItem>
         {/* new tabs, which the desktop shell hands to the system browser
             (initDesktopShell); the desktop app has nothing to download */}
-        {!isDesktopShell() && (
+        {!isDesktopShell() && hostedProducts && (
           <DropdownMenuItem asChild>
             <a href={DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">
               <DesktopIcon size="rail" /> {t('shell.desktopApp')}
             </a>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem asChild>
-          <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer">
-            <ExportIcon size="rail" /> {t('shell.website')}
-          </a>
-        </DropdownMenuItem>
+        {hostedProducts && (
+          <DropdownMenuItem asChild>
+            <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer">
+              <ExportIcon size="rail" /> {t('shell.website')}
+            </a>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {/* the theme is one click from every page; picking one keeps the menu
             open so the change can be seen, and judged, before it closes */}
@@ -161,21 +166,23 @@ export function AccountMenu({
           ))}
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          tone="danger"
-          onSelect={() =>
-            authClient.signOut().then(() => {
-              posthog.reset()
-              /* the shell has no marketing site: a signed-out reload of /
+        {hostedProducts && (
+          <DropdownMenuItem
+            tone="danger"
+            onSelect={() =>
+              authClient.signOut().then(() => {
+                posthog.reset()
+                /* the shell has no marketing site: a signed-out reload of /
                  would show the landing page, so it goes to the sign-in form
                  the shell opens on (main.rs) */
-              if (isDesktopShell()) location.assign('/auth')
-              else location.reload()
-            })
-          }
-        >
-          <LogOutIcon size="rail" /> {t('shell.logOut')}
-        </DropdownMenuItem>
+                if (isDesktopShell()) location.assign('/auth')
+                else location.reload()
+              })
+            }
+          >
+            <LogOutIcon size="rail" /> {t('shell.logOut')}
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

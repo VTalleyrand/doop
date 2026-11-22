@@ -1,3 +1,4 @@
+import { designActionAllowed } from '../../../zaboka/designPolicy'
 /* Every command the canvas editor offers, in one list: the keyboard handler,
    the ⌘K palette, the main menu and the shortcuts sheet all read it, so a
    command, its name and its chord are written once. The canvas page lends
@@ -186,7 +187,7 @@ function duplicate(): boolean {
 const mod = (key: string, extra: Partial<Chord> = {}): Chord => ({ key, mod: true, ...extra })
 const code = (c: string, extra: Partial<Chord> = {}): Chord => ({ code: c, ...extra })
 
-export const ACTIONS: readonly CanvasAction[] = [
+const upstreamActions: readonly CanvasAction[] = [
   /* ---- the way out, the palette's own line and the agent ---- */
   {
     id: 'go-to-files',
@@ -1082,11 +1083,12 @@ export const ACTIONS: readonly CanvasAction[] = [
     run: () => openUpgrade({ source: 'canvas-menu' }),
   },
 ]
+export const ACTIONS: readonly CanvasAction[] = upstreamActions.filter((a) => designActionAllowed(a.id))
 
 /** Whether the action can run now: the canvas is open and editable when it
  *  needs to be, and its own test passes. */
 export function isEnabled(action: CanvasAction): boolean {
-  if (!host) return false
+  if (!host || !designActionAllowed(action.id)) return false
   if (action.edit && !canEdit()) return false
   return action.enabled ? action.enabled() : true
 }

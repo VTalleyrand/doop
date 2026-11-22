@@ -132,3 +132,9 @@ it('leaves a canceled workspace alone and makes a new one, since reactivating bi
   expect(api.createWorkspace).toHaveBeenCalled()
   expect(api.workspaceCheckout).toHaveBeenCalledWith('new', 'month', 1)
 })
+
+// Keep dormant upstream integration behavior covered; local policy has separate coverage.
+vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
+  hostedProducts: true,
+}))

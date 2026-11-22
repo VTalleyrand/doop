@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { ApiError, api, errorMessage } from '../lib/api'
 import { useT } from '../lib/i18n'
@@ -264,6 +265,8 @@ export function FontLibrary({ workspaceId }: { workspaceId?: string }) {
                   size="sm"
                   variant="primary"
                   className="mt-2 self-start"
+                  disabled={!hostedProducts}
+                  hidden={!hostedProducts}
                   onClick={() => openUpgrade({ source: 'font-limit' })}
                 >
                   <RocketIcon size="rail" /> {t('plans.fontLimitAction')}

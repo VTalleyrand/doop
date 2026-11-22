@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useState } from 'react'
 import { activeComponents, type ComponentDef } from '../../shared/components'
 import type { WorkspaceSummary } from '../../shared/types'
@@ -379,7 +380,7 @@ export function LibraryUpgradeFlow({
   )
 }
 
-function UpsellCard({
+function HostedUpsellCard({
   planRequired,
   billing,
   onStart,
@@ -523,3 +524,6 @@ export function LibrarySection({
     </>
   )
 }
+
+const UpsellCard = (props: Parameters<typeof HostedUpsellCard>[0]) =>
+  hostedProducts ? <HostedUpsellCard {...props} /> : null

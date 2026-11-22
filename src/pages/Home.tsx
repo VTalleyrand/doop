@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Canvas, CanvasMeta, WorkspaceSummary } from '../../shared/types'
 import { colorFor } from '../../shared/types'
@@ -369,7 +370,7 @@ export function Home() {
                   <b>{t('home.noPlanTitle', { name: currentWorkspace.name })}</b>{' '}
                   {currentWorkspace.role !== 'owner' ? t('home.noPlanAskOwner') : t('home.noPlanChoose')}
                 </span>
-                {currentWorkspace.role === 'owner' && (
+                {currentWorkspace.role === 'owner' && hostedProducts && (
                   <Button variant="primary" size="sm" onClick={() => setUpgrade({ workspaceId: currentWorkspace.id })}>
                     {t('home.choosePlan')}
                   </Button>
@@ -723,9 +724,11 @@ function CanvasActions({
         </IconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent width="md">
-        <DropdownMenuItem onSelect={onShare}>
-          <ShareIcon className="size-4" /> {t('home.share')}
-        </DropdownMenuItem>
+        {hostedProducts && (
+          <DropdownMenuItem onSelect={onShare}>
+            <ShareIcon className="size-4" /> {t('home.share')}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem disabled={duplicating} onSelect={onDuplicate}>
           <CopyIcon className="size-4" /> {duplicating ? t('home.duplicating') : t('home.duplicate')}
         </DropdownMenuItem>
