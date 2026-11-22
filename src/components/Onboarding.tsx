@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../lib/store'
 import { roleByAgentName } from '../../shared/agents'
@@ -45,7 +46,7 @@ function save(p: Progress) {
   localStorage.setItem(LS_KEY, JSON.stringify(p))
 }
 
-export function Onboarding({ canvasId }: { canvasId: string }) {
+function HostedOnboarding({ canvasId }: { canvasId: string }) {
   const t = useT()
   const isMobile = useIsMobile()
   const docked = usePanelLayout() === 'docked'
@@ -234,3 +235,6 @@ function Step({ done, label, children }: { done: boolean; label: string; childre
     </div>
   )
 }
+
+export const Onboarding = (props: Parameters<typeof HostedOnboarding>[0]) =>
+  hostedProducts ? <HostedOnboarding {...props} /> : null

@@ -219,3 +219,9 @@ it.each(['https://doop.design', 'http://localhost:4301'])(
     expect(document.querySelector('a[download]')).toBeNull()
   },
 )
+
+// Keep dormant upstream integration behavior covered; local policy has separate coverage.
+vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
+  hostedProducts: true,
+}))

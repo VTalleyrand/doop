@@ -110,6 +110,7 @@ describe.skipIf(!findBrowserPath())('the Pages and Layers split', () => {
   it('dragging the split up gives the Layers tree the room the Pages list gives up', async () => {
     const before = await sizes()
     await dragSplit(-120)
+    await expect.poll(async () => before.pages - (await sizes()).pages).toBeCloseTo(120, 0)
     const after = await sizes()
     expect(before.pages - after.pages).toBeCloseTo(120, 0)
     expect(after.tree - before.tree).toBeCloseTo(120, 0)
@@ -134,9 +135,20 @@ describe.skipIf(!findBrowserPath())('the Pages and Layers split', () => {
   })
 
   it('keeps the split when the page loads again', async () => {
+    const before = await sizes()
     await dragSplit(-120)
+    await expect.poll(async () => (await sizes()).pages).toBeCloseTo(before.pages - 120, 0)
     const dragged = await sizes()
+    // React paints the split before the effect persists its percentage.
+    // Reload only after that exact rendered value has reached storage.
+    await page.waitForFunction(() => {
+      const panel = document.querySelector<HTMLElement>('[data-slot="pages-panel"]')!
+      const stored = localStorage.getItem('doop:layers-pages-split:c')
+      const rendered = panel.style.height.match(/([\d.]+)%/)
+      return stored !== null && !!rendered && Math.abs(Number(stored) - Number(rendered[1])) < 0.0001
+    })
     await showCanvasPage(page, FRAMES, '', { pages: PAGES })
+    await expect.poll(async () => (await sizes()).pages).toBeCloseTo(dragged.pages, 0)
     expect((await sizes()).pages).toBeCloseTo(dragged.pages, 0)
   })
 

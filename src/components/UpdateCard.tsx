@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
@@ -8,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 /** The desktop shell's "Update available" card (src/lib/desktopUpdate.ts):
  *  mounted once over every screen, empty until the shell offers an update. */
-export function UpdateCard() {
+function HostedUpdateCard() {
   const [offer, setOffer] = useState<UpdateOffer | null>(null)
   useEffect(() => listenForUpdates(setOffer), [])
   /* the live region stays mounted so the card is announced when it appears,
@@ -89,3 +90,5 @@ export function UpdateCardView({ version, restarting = false, onRestart, onLater
     </section>
   )
 }
+
+export const UpdateCard = () => (hostedProducts ? <HostedUpdateCard /> : null)

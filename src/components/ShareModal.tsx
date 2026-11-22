@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useState } from 'react'
 import { COMMUNITY_CATEGORIES, type Canvas, type CommunityCategory } from '../../shared/types'
 import { toLinkAccess, type LinkAccess } from '../../shared/canvasRole'
@@ -57,7 +58,7 @@ const LINK_ACCESS_ORDER: readonly LinkAccess[] = ['none', 'view', 'comment', 'ed
 
 /* One sharing surface for the canvas and dashboard. The caller owns canvas
    state; this component reports optimistic access changes back to it. */
-export function ShareModal({
+function HostedShareModal({
   canvas,
   onChange,
   onClose,
@@ -432,3 +433,6 @@ function CommunityListing({
     </div>
   )
 }
+
+export const ShareModal = (props: Parameters<typeof HostedShareModal>[0]) =>
+  hostedProducts ? <HostedShareModal {...props} /> : null

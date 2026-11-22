@@ -1,3 +1,4 @@
+import { hostedProducts, designSettingsPaneAllowed } from '../../zaboka/designPolicy'
 import { useState } from 'react'
 import { navigate } from '../App'
 import { useT, type PlainMessageKey } from '../lib/i18n'
@@ -57,7 +58,7 @@ const panes: Record<Pane, { title: PlainMessageKey; blurb: PlainMessageKey }> = 
 }
 
 function isPane(value: string | null): value is Pane {
-  return value !== null && value in panes
+  return value !== null && value in panes && designSettingsPaneAllowed(value)
 }
 
 /** ?pane= deep-links a section — the connect modal sends people to ?pane=keys. */
@@ -121,22 +122,26 @@ export function Settings() {
           >
             {t('settings.generalTitle')}
           </DashNavItem>
-          <DashNavItem
-            density="rail"
-            icon={<UserIcon size="rail" />}
-            active={pane === 'account'}
-            onClick={() => setPane('account')}
-          >
-            {t('settings.accountTitle')}
-          </DashNavItem>
-          <DashNavItem
-            density="rail"
-            icon={<CreditCardIcon size="rail" />}
-            active={pane === 'plan'}
-            onClick={() => setPane('plan')}
-          >
-            {t('plans.settingsTitle')}
-          </DashNavItem>
+          {hostedProducts && (
+            <DashNavItem
+              density="rail"
+              icon={<UserIcon size="rail" />}
+              active={pane === 'account'}
+              onClick={() => setPane('account')}
+            >
+              {t('settings.accountTitle')}
+            </DashNavItem>
+          )}
+          {hostedProducts && (
+            <DashNavItem
+              density="rail"
+              icon={<CreditCardIcon size="rail" />}
+              active={pane === 'plan'}
+              onClick={() => setPane('plan')}
+            >
+              {t('plans.settingsTitle')}
+            </DashNavItem>
+          )}
           <DashNavItem
             density="rail"
             icon={<MoonIcon size="rail" />}
@@ -161,14 +166,16 @@ export function Settings() {
           >
             {t('settings.keysTitle')}
           </DashNavItem>
-          <DashNavItem
-            density="rail"
-            icon={<BellIcon size="rail" />}
-            active={pane === 'webhooks'}
-            onClick={() => setPane('webhooks')}
-          >
-            {t('settings.webhooksTitle')}
-          </DashNavItem>
+          {hostedProducts && (
+            <DashNavItem
+              density="rail"
+              icon={<BellIcon size="rail" />}
+              active={pane === 'webhooks'}
+              onClick={() => setPane('webhooks')}
+            >
+              {t('settings.webhooksTitle')}
+            </DashNavItem>
+          )}
           <DashNavItem
             density="rail"
             icon={<TextIcon size="rail" />}
@@ -217,15 +224,21 @@ export function Settings() {
               <TabsTrigger value="keys">
                 <KeyIcon size="rail" /> {t('settings.keysTitle')}
               </TabsTrigger>
-              <TabsTrigger value="webhooks">
-                <BellIcon size="rail" /> {t('settings.webhooksTitle')}
-              </TabsTrigger>
-              <TabsTrigger value="account">
-                <UserIcon size="rail" /> {t('settings.accountTab')}
-              </TabsTrigger>
-              <TabsTrigger value="plan">
-                <CreditCardIcon size="rail" /> {t('plans.settingsTitle')}
-              </TabsTrigger>
+              {hostedProducts && (
+                <TabsTrigger value="webhooks">
+                  <BellIcon size="rail" /> {t('settings.webhooksTitle')}
+                </TabsTrigger>
+              )}
+              {hostedProducts && (
+                <TabsTrigger value="account">
+                  <UserIcon size="rail" /> {t('settings.accountTab')}
+                </TabsTrigger>
+              )}
+              {hostedProducts && (
+                <TabsTrigger value="plan">
+                  <CreditCardIcon size="rail" /> {t('plans.settingsTitle')}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="appearance">
                 <MoonIcon size="rail" /> {t('settings.appearanceTitle')}
               </TabsTrigger>

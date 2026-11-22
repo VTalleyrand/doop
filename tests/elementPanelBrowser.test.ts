@@ -166,8 +166,19 @@ describe.skipIf(!findBrowserPath())('element design controls', () => {
     await frame.waitForFunction(() =>
       getComputedStyle(document.querySelector('#text')!).fontFamily.includes('Display Face'),
     )
-    await page.select(selector, '"Lora", serif')
-    await page.click('[aria-label="Align center"]')
+    // Font options use the inspected computed stack for the current family.
+    // Wait for Display Face's inspector read before choosing Lora's option.
+    await page.waitForFunction(() =>
+      document.querySelector<HTMLSelectElement>('select[aria-label="Font family"]')?.value.includes('Display Face'),
+    )
+    expect(await page.select(selector, '"Lora", serif')).toEqual(['"Lora", serif'])
+    // Finish the font round trip before the next pointer interaction: the
+    // inspector can still be refreshing its controls after select() returns.
+    await page.waitForFunction(
+      () => document.querySelector<HTMLSelectElement>('select[aria-label="Font family"]')?.value === 'Lora, serif',
+    )
+    await frame.waitForFunction(() => getComputedStyle(document.querySelector('#text')!).fontFamily === 'Lora, serif')
+    await page.locator('[aria-label="Align center"]').click()
     await frame.waitForFunction(() => getComputedStyle(document.querySelector('#text')!).textAlign === 'center')
     await page.keyboard.press('ArrowRight')
     await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Align right')
@@ -705,6 +716,13 @@ describe.skipIf(!findBrowserPath())('element design controls', () => {
     const sibling = await frame.$eval('#sibling', (el) => el.getBoundingClientRect().toJSON())
     const originalTransform = await frame.$eval('#box', (el) => getComputedStyle(el).transform)
     const before = await frame.$eval('#box', (el) => (el as HTMLElement).style.translate)
+    // These edits deliberately form one undo group. Keep history time inside
+    // its coalescing window even when browser protocol calls take longer.
+    // Only this test's parent page clock is fixed; iframe timers still run.
+    await page.evaluate(() => {
+      const now = Date.now()
+      Date.now = () => now
+    })
     await number('X position', 40)
     await frame.waitForFunction(
       () =>

@@ -25,6 +25,9 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/.claude/**'],
     setupFiles: ['tests/setup.ts'],
     globalSetup: ['tests/globalSetup.ts'],
+    // Workers also start database engines and drive shared Chromium renderers.
+    // Bound concurrency so those processes can finish within the test deadlines.
+    maxWorkers: 2,
     projects: [
       { test: { name: 'parallel', exclude: clipboardTests } },
       // Browser contexts share the system clipboard, so these files must run one at a time.

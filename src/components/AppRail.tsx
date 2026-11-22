@@ -1,3 +1,4 @@
+import { hostedProducts, designWorkspacePaneAllowed } from '../../zaboka/designPolicy'
 import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import type { CanvasMeta, WorkspaceSummary } from '../../shared/types'
 import { api } from '../lib/api'
@@ -75,7 +76,7 @@ const WORKSPACE_PANES: readonly WorkspacePane[] = ['members', 'fonts', 'agents',
 
 /** the panes a workspace role may open: billing and settings are for its owner and admins */
 export function workspacePanesFor(role: WorkspaceSummary['role'] | undefined): WorkspacePane[] {
-  return WORKSPACE_PANES.filter((p) => role !== 'member' || (p !== 'billing' && p !== 'general'))
+  return WORKSPACE_PANES.filter((p) => designWorkspacePaneAllowed(p))
 }
 
 /** an agent that worked this recently is treated as still at the desk */
@@ -337,32 +338,42 @@ export function AppRail({
             ))}
         </div>
       ))}
-      <IconButton aria-label={t('rail.newWorkspace')} onClick={createWorkspace}>
-        <FolderPlusIcon size="rail" />
-      </IconButton>
+      {hostedProducts && (
+        <IconButton aria-label={t('rail.newWorkspace')} onClick={createWorkspace}>
+          <FolderPlusIcon size="rail" />
+        </IconButton>
+      )}
       <Rule />
-      <IconButton aria-label={t('rail.community')} on={active === 'community'} onClick={() => go('/community')}>
-        <WebIcon size="rail" />
-      </IconButton>
-      <IconButton aria-label={t('rail.automations')} on={active === 'automations'} onClick={() => go('/automations')}>
-        <WorkflowIcon size="rail" />
-      </IconButton>
-      <IconButton
-        aria-label={t('rail.integrations')}
-        on={active === 'integrations'}
-        onClick={() => go('/integrations')}
-      >
-        <BlocksIcon size="rail" />
-      </IconButton>
+      {hostedProducts && (
+        <IconButton aria-label={t('rail.community')} on={active === 'community'} onClick={() => go('/community')}>
+          <WebIcon size="rail" />
+        </IconButton>
+      )}
+      {hostedProducts && (
+        <IconButton aria-label={t('rail.automations')} on={active === 'automations'} onClick={() => go('/automations')}>
+          <WorkflowIcon size="rail" />
+        </IconButton>
+      )}
+      {hostedProducts && (
+        <IconButton
+          aria-label={t('rail.integrations')}
+          on={active === 'integrations'}
+          onClick={() => go('/integrations')}
+        >
+          <BlocksIcon size="rail" />
+        </IconButton>
+      )}
       <Rule />
       {agents.map((a) => (
         <span key={a.name} className="grid size-8 place-items-center" title={a.name}>
           <AgentTile name={a.name} />
         </span>
       ))}
-      <IconButton aria-label={t('rail.connectAgent')} onClick={connect}>
-        <CirclePlusIcon size="rail" />
-      </IconButton>
+      {hostedProducts && (
+        <IconButton aria-label={t('rail.connectAgent')} onClick={connect}>
+          <CirclePlusIcon size="rail" />
+        </IconButton>
+      )}
       {children ? (
         <>
           <Rule />
@@ -373,7 +384,7 @@ export function AppRail({
         </>
       ) : null}
       <div className="mt-auto flex flex-col items-center gap-2 pt-4">
-        {offerUpgrade && (
+        {offerUpgrade && hostedProducts && (
           <IconButton aria-label={t('plans.upgradeToPro')} title={t('plans.upgradeToPro')} onClick={upgrade}>
             <RocketIcon size="rail" className="text-brand" />
           </IconButton>
@@ -482,41 +493,49 @@ export function AppRail({
             )}
           </div>
         ))}
-        <DashNavItem density="rail" icon={<FolderPlusIcon size="rail" />} onClick={createWorkspace}>
-          {spaces.length ? t('rail.newWorkspace') : t('rail.createWorkspace')}
-        </DashNavItem>
+        {hostedProducts && (
+          <DashNavItem density="rail" icon={<FolderPlusIcon size="rail" />} onClick={createWorkspace}>
+            {spaces.length ? t('rail.newWorkspace') : t('rail.createWorkspace')}
+          </DashNavItem>
+        )}
       </nav>
 
       <DashSectionLabel density="rail">{t('rail.explore')}</DashSectionLabel>
       <nav className="flex flex-col gap-0.5">
-        <DashNavItem
-          density="rail"
-          icon={<WebIcon size="rail" />}
-          active={active === 'community'}
-          onClick={() => go('/community')}
-        >
-          {t('rail.community')}
-        </DashNavItem>
+        {hostedProducts && (
+          <DashNavItem
+            density="rail"
+            icon={<WebIcon size="rail" />}
+            active={active === 'community'}
+            onClick={() => go('/community')}
+          >
+            {t('rail.community')}
+          </DashNavItem>
+        )}
       </nav>
 
       <DashSectionLabel density="rail">{t('rail.resources')}</DashSectionLabel>
       <nav className="flex flex-col gap-0.5">
-        <DashNavItem
-          density="rail"
-          icon={<WorkflowIcon size="rail" />}
-          active={active === 'automations'}
-          onClick={() => go('/automations')}
-        >
-          {t('rail.automations')}
-        </DashNavItem>
-        <DashNavItem
-          density="rail"
-          icon={<BlocksIcon size="rail" />}
-          active={active === 'integrations'}
-          onClick={() => go('/integrations')}
-        >
-          {t('rail.integrations')}
-        </DashNavItem>
+        {hostedProducts && (
+          <DashNavItem
+            density="rail"
+            icon={<WorkflowIcon size="rail" />}
+            active={active === 'automations'}
+            onClick={() => go('/automations')}
+          >
+            {t('rail.automations')}
+          </DashNavItem>
+        )}
+        {hostedProducts && (
+          <DashNavItem
+            density="rail"
+            icon={<BlocksIcon size="rail" />}
+            active={active === 'integrations'}
+            onClick={() => go('/integrations')}
+          >
+            {t('rail.integrations')}
+          </DashNavItem>
+        )}
       </nav>
 
       {/* a page's own group keeps the drawer's contract: a pick puts it away */}
@@ -549,17 +568,19 @@ export function AppRail({
             {a.name}
           </DashNavItem>
         ))}
-        <DashNavItem
-          density="rail"
-          icon={
-            <span className="grid size-[18px] flex-none place-items-center">
-              <CirclePlusIcon size="rail" />
-            </span>
-          }
-          onClick={connect}
-        >
-          {t('rail.connectAgent')}
-        </DashNavItem>
+        {hostedProducts && (
+          <DashNavItem
+            density="rail"
+            icon={
+              <span className="grid size-[18px] flex-none place-items-center">
+                <CirclePlusIcon size="rail" />
+              </span>
+            }
+            onClick={connect}
+          >
+            {t('rail.connectAgent')}
+          </DashNavItem>
+        )}
       </div>
 
       {/* the desktop app, on a computer's browser only; the phone drawer
@@ -568,7 +589,7 @@ export function AppRail({
         {!inDrawer && <NativeAppCard className="mb-3" />}
         {/* the one way to Pro that is always in view: people looked for it
             and found only "Create workspace" */}
-        {offerUpgrade && (
+        {offerUpgrade && hostedProducts && (
           <Button size="bar" className="mb-3 w-full justify-center" onClick={upgrade}>
             <RocketIcon size="rail" className="text-brand" /> {t('plans.upgradeToPro')}
           </Button>

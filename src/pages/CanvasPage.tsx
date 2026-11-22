@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { CAPTURE_PREFIX, pasteWebCapture } from '../lib/webCapture'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { canEditOpenCanvas, pickedSelectors, roleOf, useStore } from '../lib/store'
@@ -950,7 +951,7 @@ export function CanvasPage({
             </BarPill>
           )}
           <BarPill>
-            {!guest && (
+            {!guest && hostedProducts && (
               <Button variant="bare" className={barPillBtn} onClick={() => setShowShare(true)}>
                 <ShareUpIcon className="size-3.5" />
                 {t('canvas.share')}
@@ -983,7 +984,7 @@ export function CanvasPage({
           {/* the bar's one black action — it opens the MCP connection modal;
               an agent connected through a view or comment link could not
               change anything, so readers are not offered it */}
-          {!readOnly && (
+          {hostedProducts && !readOnly && (
             <Button
               variant="primary"
               className={cn(docked ? barPrimaryCompactBtn : barPrimaryBtn, 'shadow-ring')}
@@ -1004,7 +1005,7 @@ export function CanvasPage({
               <PeerAvatars others={others} />
             </span>
           </div>
-          {!readOnly && (
+          {hostedProducts && !readOnly && (
             <Button
               variant="primary"
               className={cn(docked ? barPrimaryCompactBtn : barPrimaryBtn, 'shadow-ring')}
@@ -1221,7 +1222,7 @@ export function CanvasPage({
                     <ImportIcon /> {t('canvas.importWebsite')}
                   </Button>
                 )}
-                {!guest && (
+                {!guest && hostedProducts && (
                   <Button
                     variant="ghost"
                     className="h-11 justify-start gap-2.5 border-line bg-surface px-4"
@@ -1397,7 +1398,7 @@ export function CanvasPage({
           }}
         />
       )}
-      {updateReady ? (
+      {hostedProducts && updateReady ? (
         <Toast>
           {t('canvas.appUpdated')}
           <ToastAction onClick={() => location.reload()}>{t('canvas.reload')}</ToastAction>

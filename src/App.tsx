@@ -1,3 +1,4 @@
+import { designRouteAllowed, hostedProducts } from '../zaboka/designPolicy'
 import { startLocalAgent } from './lib/localAgent'
 import { navigate } from './lib/navigate'
 import { useEffect, useRef, useState } from 'react'
@@ -52,7 +53,8 @@ function reportProviderSignup() {
 
 export function App() {
   const [route, setRoute] = useState(location.pathname + location.search)
-  const path = route.split('?')[0]!
+  const safeRoute = designRouteAllowed(route) ? route : '/'
+  const path = safeRoute.split('?')[0]!
   const { data: session, isPending } = authClient.useSession()
   /* a signed-out guest on a share link asked for the sign-in form */
   const [guestAuth, setGuestAuth] = useState<'signin' | 'signup' | null>(null)
@@ -74,7 +76,7 @@ export function App() {
   const canvasId = path.match(/^\/c\/([^/]+)/)?.[1]
   /* the support chat bubble stays off the editor, where it would cover the
      zoom bar; every other page keeps it */
-  useEffect(() => setSupportWidgetVisible(!canvasId), [canvasId])
+  useEffect(() => setSupportWidgetVisible(hostedProducts && !canvasId), [canvasId])
 
   const returningToAdmin = !!me?.impersonating && path.startsWith('/admin')
   useEffect(() => {
@@ -141,7 +143,7 @@ export function App() {
   /* the desktop app sent this browser here to begin a provider sign-in on
      its behalf (src/lib/desktopAuth.ts) — signed in or not, the page itself
      decides where to go next */
-  if (path === DESKTOP_SIGNIN_PATH)
+  if (hostedProducts && path === DESKTOP_SIGNIN_PATH)
     return (
       <>
         <ShellDragBar />
@@ -152,7 +154,7 @@ export function App() {
   /* a provider sent the system browser back for a connection the desktop
      app started (shared/desktopConnect.ts) — the app finishes it under its
      own account, so this browser's session does not matter */
-  if (path === DESKTOP_CONNECT_PATH)
+  if (hostedProducts && path === DESKTOP_CONNECT_PATH)
     return (
       <>
         <ShellDragBar />
@@ -164,7 +166,7 @@ export function App() {
      the owner shared it by link (server: guestCanvasRole); a private one
      refuses the join and lands on the sign-in form below. The prototype
      player stays behind sign-in. */
-  if (!session && canvasId && !path.includes('/proto') && !signInRequired && !guestAuth)
+  if (hostedProducts && !session && canvasId && !path.includes('/proto') && !signInRequired && !guestAuth)
     return (
       <>
         <ShellDragBar />
@@ -186,7 +188,9 @@ export function App() {
     return (
       <>
         <ShellDragBar />
-        <AuthPage initialMode={guestAuth ?? undefined} />
+        <AuthScreen>
+          <p>Open Design through the local Doop door to restore your local identity.</p>
+        </AuthScreen>
       </>
     )
 
@@ -228,7 +232,7 @@ export function App() {
   const page = (
     <>
       {screen}
-      <UpgradeHost />
+      {hostedProducts && <UpgradeHost />}
     </>
   )
 

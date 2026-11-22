@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Canvas, CanvasMeta, WorkspaceSummary } from '../../shared/types'
 import { colorFor } from '../../shared/types'
@@ -363,13 +364,13 @@ export function Home() {
           />
 
           <div className="px-4 pt-8 md:px-8 md:pt-10">
-            {currentWorkspace && !currentWorkspace.active && (
+            {hostedProducts && currentWorkspace && !currentWorkspace.active && (
               <Callout className="mb-5 flex max-w-[760px] flex-col gap-2 sm:flex-row sm:items-center">
                 <span className="flex-1">
                   <b>{t('home.noPlanTitle', { name: currentWorkspace.name })}</b>{' '}
                   {currentWorkspace.role !== 'owner' ? t('home.noPlanAskOwner') : t('home.noPlanChoose')}
                 </span>
-                {currentWorkspace.role === 'owner' && (
+                {currentWorkspace.role === 'owner' && hostedProducts && (
                   <Button variant="primary" size="sm" onClick={() => setUpgrade({ workspaceId: currentWorkspace.id })}>
                     {t('home.choosePlan')}
                   </Button>
@@ -381,7 +382,7 @@ export function Home() {
             <div className="flex flex-wrap items-center gap-2 md:flex-nowrap">
               <h2 className="min-w-0 flex-1 truncate text-body font-medium text-ink">
                 {currentWorkspace && listTitle}
-                {currentWorkspace && (
+                {hostedProducts && currentWorkspace && (
                   <span className="ml-2 font-normal text-ink-faint">
                     {t('home.people', { count: currentWorkspace.memberCount })} ·{' '}
                     {currentWorkspace.plan === 'team' && currentWorkspace.active
@@ -723,9 +724,11 @@ function CanvasActions({
         </IconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent width="md">
-        <DropdownMenuItem onSelect={onShare}>
-          <ShareIcon className="size-4" /> {t('home.share')}
-        </DropdownMenuItem>
+        {hostedProducts && (
+          <DropdownMenuItem onSelect={onShare}>
+            <ShareIcon className="size-4" /> {t('home.share')}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem disabled={duplicating} onSelect={onDuplicate}>
           <CopyIcon className="size-4" /> {duplicating ? t('home.duplicating') : t('home.duplicate')}
         </DropdownMenuItem>

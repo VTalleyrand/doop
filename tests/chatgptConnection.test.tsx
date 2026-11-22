@@ -104,3 +104,9 @@ it.each([
   expect(text()).not.toContain('Work on Doop canvas')
   expect(text()).not.toContain('https://doop.design/mcp')
 })
+
+// Keep dormant upstream integration behavior covered; local policy has separate coverage.
+vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
+  hostedProducts: true,
+}))
