@@ -1,4 +1,4 @@
-import { hostedProducts } from '../../zaboka/designPolicy'
+import { doopAgent, hostedProducts } from '../../zaboka/designPolicy'
 import { CAPTURE_PREFIX, pasteWebCapture } from '../lib/webCapture'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { canEditOpenCanvas, pickedSelectors, roleOf, useStore } from '../lib/store'
@@ -628,7 +628,7 @@ export function CanvasPage({
   function openAgent() {
     const state = useStore.getState()
     /* the composer is an editor's: readers (and guests) have none */
-    if (guest || !state.canvas || !canEditOpenCanvas(state)) return
+    if (!doopAgent || guest || !state.canvas || !canEditOpenCanvas(state)) return
     setShowActivity(true)
     if (state.uiHidden) state.toggleUiHidden()
     state.setPanelTab('tasks')
@@ -1312,7 +1312,7 @@ export function CanvasPage({
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
           onAsk={
-            guest || readOnly
+            !doopAgent || guest || readOnly
               ? null
               : (prompt) => {
                   useStore.getState().setComposerDraft(canvasId, prompt)

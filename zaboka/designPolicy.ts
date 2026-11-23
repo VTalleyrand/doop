@@ -14,6 +14,10 @@ export function designRouteAllowed(value: string): boolean {
   if (/^\/w\/[^/]+\/?$/.test(path)) return designWorkspacePaneAllowed(url.searchParams.get('pane') ?? '')
   return false
 }
+/** Doop's own agent (the Agents tab, its composer, ⌘/, the home prompt) is off here:
+ *  Zaboka's Design agent is the one agent, chatting in Zaboka's own window beside the
+ *  canvas and editing through Doop's MCP server. */
+export const doopAgent = hostedProducts
 export function designActionAllowed(id: string): boolean {
-  return !['upgrade', 'customer-support'].includes(id)
+  return !['upgrade', 'customer-support', ...(doopAgent ? [] : ['ask-agent'])].includes(id)
 }

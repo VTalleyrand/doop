@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { AgentTask } from '../../shared/types'
+import { doopAgent } from '../../zaboka/designPolicy'
 import { canEditOpenCanvas, useStore } from '../lib/store'
 import { api } from '../lib/api'
 import { timeAgo } from '../lib/time'
@@ -74,7 +75,8 @@ export function ActivityPanel({
   const setTab = useStore((s) => s.setPanelTab)
   const canEdit = useStore(canEditOpenCanvas)
   /* someone who cannot edit sees the comments only (PanelTabButtons) */
-  const tab = useStore((s) => (canEdit ? s.panelTab : 'comments'))
+  /* without Doop's own agent (Zaboka's Design agent chats beside the canvas) there is no Agents tab */
+  const tab = useStore((s) => (canEdit && (doopAgent || s.panelTab !== 'tasks') ? s.panelTab : 'comments'))
   const [, tick] = useState(0)
   const openThreads = useOpenThreadCount()
   const working = useStore((s) => s.tasks.filter((t) => t.agentName && !t.endedAt && !t.failedAt).length)
@@ -101,7 +103,7 @@ export function ActivityPanel({
       <PanelTabsRoot value={tab} onValueChange={(next) => setTab(next as typeof tab)}>
         <PanelHeader className="pl-2">
           <PanelTabs aria-label={t('panels.activityPanelAria')}>
-            {canEdit && (
+            {canEdit && doopAgent && (
               <PanelIconTab value="tasks" icon={<SparkIcon />} title={t('panels.activityAgents')}>
                 {t('panels.activityAgents')}
                 {working > 0 && (
@@ -143,17 +145,19 @@ export function ActivityPanel({
         </PanelHeader>
         {/* the Agents tab is a column: what the agents are doing on top, the
             conversation with them under it, the prompt composer docked below */}
-        <PanelTabPanel value="tasks" className={tabEnter}>
-          {hasChat ? (
-            <AgentsSplit />
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-              <RecentTasks />
-            </div>
-          )}
-          {/* the composer briefs agents to change frames: editors only */}
-          {canEdit && <PromptBar canvasId={canvasId} />}
-        </PanelTabPanel>
+        {doopAgent && (
+          <PanelTabPanel value="tasks" className={tabEnter}>
+            {hasChat ? (
+              <AgentsSplit />
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                <RecentTasks />
+              </div>
+            )}
+            {/* the composer briefs agents to change frames: editors only */}
+            {canEdit && <PromptBar canvasId={canvasId} />}
+          </PanelTabPanel>
+        )}
         <PanelTabPanel value="comments" className={tabEnter}>
           <CommentsPanel />
         </PanelTabPanel>

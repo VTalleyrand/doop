@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { designActionAllowed, designRouteAllowed, hostedProducts } from '../zaboka/designPolicy'
+import { designActionAllowed, designRouteAllowed, doopAgent, hostedProducts } from '../zaboka/designPolicy'
 
 describe('local Design entry points', () => {
   it.each([
@@ -37,5 +37,10 @@ describe('local Design entry points', () => {
       expect(designActionAllowed(id)).toBe(true)
     expect(designActionAllowed('upgrade')).toBe(false)
     expect(designActionAllowed('customer-support')).toBe(false)
+  })
+  it("leaves Doop's own agent out: Zaboka's Design agent is the one agent", () => {
+    expect(doopAgent).toBe(false)
+    expect(designActionAllowed('ask-agent')).toBe(false)
+    expect(designActionAllowed('comments')).toBe(true)
   })
 })
