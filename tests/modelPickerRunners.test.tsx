@@ -4,6 +4,12 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { AgentRunners } from '../shared/agentRunner.ts'
 const mocks = vi.hoisted(() => ({ runners: vi.fn(), models: vi.fn(), capture: vi.fn() }))
+// Preserve upstream composer and model-picker coverage independently of the local product policy
+// (local Design sends through Zaboka: tests/designRunner.test.ts).
+vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
+  hostedProducts: true,
+}))
 vi.mock('../src/lib/api', () => ({ api: { agentRunners: mocks.runners, agentModels: mocks.models } }))
 vi.mock('../src/lib/posthog', () => ({ posthog: { capture: mocks.capture } }))
 vi.mock('../src/App', () => ({ navigate: vi.fn() }))

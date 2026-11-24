@@ -26,6 +26,7 @@ import { isResidentLimit } from './TeamAllowance'
 import { CommentsPanel } from './CommentsPanel'
 import { PromptBar } from './PromptBar'
 import { AgentChat } from './AgentChat'
+import { useAgentTasks } from '../../zaboka/designRunner'
 import { isChatCard } from '../lib/agentChat'
 import { clampRecentHeight, MIN_CHAT_PX, MIN_RECENT_PX, readRecentHeight, writeRecentHeight } from '../lib/agentsSplit'
 import { taskFrameId } from '../lib/taskFrame'
@@ -77,8 +78,9 @@ export function ActivityPanel({
   const tab = useStore((s) => (canEdit ? s.panelTab : 'comments'))
   const [, tick] = useState(0)
   const openThreads = useOpenThreadCount()
-  const working = useStore((s) => s.tasks.filter((t) => t.agentName && !t.endedAt && !t.failedAt).length)
-  const hasChat = useStore((s) => s.tasks.some(isChatCard))
+  const agentTasks = useAgentTasks()
+  const working = agentTasks.filter((t) => t.agentName && !t.endedAt && !t.failedAt).length
+  const hasChat = agentTasks.some(isChatCard)
   const t = useT()
 
   /* refresh relative timestamps and running durations */
@@ -276,7 +278,7 @@ const RECENT_SHOWN = 3
    working on or just finished, and for whom. "Show all" opens the whole
    history in the same rows, split into what is running and what is done. */
 function RecentTasks() {
-  const tasks = useStore((s) => s.tasks)
+  const tasks = useAgentTasks()
   const [all, setAll] = useState(false)
   /* unclaimed board cards have no agent yet, so they are not activity */
   const claimed = useMemo(() => tasks.filter((t) => t.agentName), [tasks])

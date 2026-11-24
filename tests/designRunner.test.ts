@@ -3,11 +3,13 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import {
   submitDesign,
   cancelDesign,
+  designTask,
   leaveDesignProject,
   useDesignTurns,
   type DesignBridge,
   type DesignUpdate,
 } from '../zaboka/designRunner'
+import { chatTurns } from '../src/lib/agentChat'
 let listener: (update: DesignUpdate) => void
 let id: string
 const stop = vi.fn()
@@ -76,4 +78,40 @@ it('reports rejection and transport errors without another provider', async () =
   await submitDesign('project', 'Edit', host)
   listener({ requestId: id, error: 'Design connection closed.' })
   expect(useDesignTurns.getState().turns[1]?.error).toBe('Design connection closed.')
+})
+
+it("a Design turn is one of Doop's own chat cards, drawn by its chat", () => {
+  const turn = {
+    id: 't1',
+    project: 'c1',
+    prompt: 'A login screen',
+    at: 10,
+    busy: true,
+    messages: [{ id: 'm1', kind: 'text', text: 'Drafting' }],
+  }
+  const working = chatTurns([designTask(turn, 'u1')], [], 'u1')
+  expect(working).toEqual([
+    expect.objectContaining({ id: 't1', text: 'A login screen', mine: true, agentName: 'Design', state: 'working' }),
+  ])
+  const done = designTask(
+    {
+      ...turn,
+      busy: false,
+      endedAt: 20,
+      messages: [
+        ...turn.messages,
+        { id: 'm2', kind: 'tool', tool: { name: 'create_frame', ok: true } },
+        { id: 'm3', kind: 'text', text: 'Made it.' },
+      ],
+    },
+    'u1',
+  )
+  expect(chatTurns([done], [], 'u1')[0]).toEqual(
+    expect.objectContaining({ state: 'done', reply: 'Drafting\n\nMade it.' }),
+  )
+  expect(done.endedAt).toBe(20)
+  const failed = designTask({ ...turn, busy: false, endedAt: 30, error: 'Design stopped.' })
+  expect(chatTurns([failed], [], 'u1')[0]).toEqual(
+    expect.objectContaining({ state: 'failed', failureReason: 'Design stopped.', mine: false }),
+  )
 })

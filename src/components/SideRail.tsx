@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useAgentTasks } from '../../zaboka/designRunner'
 import { canEditOpenCanvas, useStore, type PanelTab } from '../lib/store'
 import { useOpenThreadCount } from '../lib/comments'
 import { navigate } from '../App'
@@ -159,7 +160,7 @@ export function PanelTabButtons({
   tooltipSide?: 'left' | 'bottom'
 }) {
   const t = useT()
-  const working = useStore((s) => s.tasks.filter((t) => t.agentName && !t.endedAt && !t.failedAt).length)
+  const working = useAgentTasks().filter((t) => t.agentName && !t.endedAt && !t.failedAt).length
   const proposalPending = useStore((s) => s.proposals.some((p) => p.status === 'pending'))
   const openThreads = useOpenThreadCount()
   const canEdit = useStore(canEditOpenCanvas)

@@ -1,9 +1,11 @@
 # Design agent routing
 
-The local product policy (`hostedProducts = false`) routes the Agents tab's existing
-PromptBar through `designRunner.ts`, and renders its conversation through
-`DesignConversation.tsx` inside AgentChat. Hosted behavior remains available in
-the original components. Connect AI and onboarding connection prompts were already
+The local product policy (`hostedProducts = false`) keeps Doop's own agent
+design (the Agents tab, its composer, chat, Recent tasks and working badges) and
+plugs Zaboka in behind it: the composer sends through `designRunner.ts` to
+Zaboka's Design agent, and each Design turn becomes one of Doop's own agent tasks
+(`designTask`, `useAgentTasks`), so Doop's chat draws it as it draws its own
+agents. While Design works, the send button is Stop. Hosted behavior is unchanged. Connect AI and onboarding connection prompts were already
 suppressed by this policy.
 
 ## Contract evidence
@@ -30,8 +32,8 @@ request-local messages, including growing text and tool/job state.
   project. Host conversation remains durable; reopening/reloading does not replay
   or recover local observations. Navigation releases subscriptions without
   claiming to stop host work. Cancel waits for the host's final snapshot.
-- Keep existing chat, task history, panels and canvas tools. The local AgentChat
-  view shows Design replies; hosted chat implementation remains intact.
+- Keep existing chat, task history, panels and canvas tools: Design's turns are
+  drawn by Doop's own AgentChat and Recent tasks, not a view of their own.
 
 ## Verification and limits
 

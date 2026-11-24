@@ -14,6 +14,12 @@ const mocks = vi.hoisted(() => ({
   addCard: vi.fn(() => Promise.resolve({})),
   agentAllowance: vi.fn(() => Promise.resolve({ used: 0, limit: 5, byoModel: false })),
 }))
+// Preserve upstream composer and model-picker coverage independently of the local product policy
+// (local Design sends through Zaboka: tests/designRunner.test.ts).
+vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
+  hostedProducts: true,
+}))
 vi.mock('../src/lib/api', () => ({
   api: {
     addCard: mocks.addCard,

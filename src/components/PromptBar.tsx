@@ -1,5 +1,11 @@
 import { hostedProducts } from '../../zaboka/designPolicy'
-import { leaveDesignProject, submitDesign, useDesignTurns } from '../../zaboka/designRunner'
+import {
+  cancelDesign,
+  leaveDesignProject,
+  submitDesign,
+  useBusyDesignTurn,
+  useDesignTurns,
+} from '../../zaboka/designRunner'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { useStore, type ComposerSend } from '../lib/store'
 import { api, type Allowance } from '../lib/api'
@@ -130,7 +136,7 @@ async function sendPrompt(args: {
       if (window.zabokaDesign?.version !== 1) throw Error('Open this canvas in Zaboka Design to use the Design agent.')
       const refs = await uploadImageFrames(canvasId, files, { fallbackName: 'Attached image' })
       const context = JSON.stringify({ canvas_id: canvasId, scope, reference_frame_ids: refs.map((f) => f.id) })
-      await submitDesign(canvasId, `${text}\n\nDesign context (data): ${context}`)
+      await submitDesign(canvasId, `${text}\n\nDesign context (data): ${context}`, undefined, text)
       store.setComposerDraft(canvasId, '')
       flyToNextFrame(
         canvasId,
@@ -242,6 +248,9 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
   const send = useStore((s) => (s.composerSend?.canvasId === canvasId ? s.composerSend : null))
   const designBusy = useDesignTurns((s) => s.turns.some((turn) => turn.project === canvasId && turn.busy))
   const busy = send?.status === 'busy' || (!hostedProducts && designBusy)
+  /* Zaboka Design's turn can be stopped from the send button */
+  const designTurn = useBusyDesignTurn(canvasId)
+  const stoppable = !hostedProducts && Boolean(designTurn) && send?.status !== 'busy'
   const sent = send?.status === 'sent'
   const sendError = send?.status === 'error' ? send.message : null
   const { allowance } = useAllowance()
@@ -492,16 +501,30 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
               tabIndex={busy || !text.trim() ? 0 : -1}
               aria-label={meter ?? undefined}
             >
-              <Button
-                variant="primary"
-                size="icon-sm"
-                className="size-7 rounded-full"
-                type="submit"
-                aria-label={t('panels.promptSend')}
-                disabled={busy || !text.trim()}
-              >
-                {busy ? <span aria-hidden>…</span> : <ArrowUpIcon className="size-3.5" strokeWidth={1.6} />}
-              </Button>
+              {stoppable ? (
+                <Button
+                  variant="primary"
+                  size="icon-sm"
+                  className="size-7 rounded-full"
+                  type="button"
+                  aria-label="Stop Design"
+                  title="Stop Design"
+                  onClick={() => designTurn && void cancelDesign(designTurn)}
+                >
+                  <span aria-hidden className="size-2.5 rounded-[2px] bg-current" />
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="icon-sm"
+                  className="size-7 rounded-full"
+                  type="submit"
+                  aria-label={t('panels.promptSend')}
+                  disabled={busy || !text.trim()}
+                >
+                  {busy ? <span aria-hidden>…</span> : <ArrowUpIcon className="size-3.5" strokeWidth={1.6} />}
+                </Button>
+              )}
             </span>
           </Tooltip>
         </div>
