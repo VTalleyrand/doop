@@ -1,3 +1,5 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
+import { DesignConversation } from '../../zaboka/DesignConversation'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useStore } from '../lib/store'
 import { authClient } from '../lib/auth'
@@ -13,7 +15,7 @@ const STICK_PX = 48
 /* The Agents tab's conversation: each prompt sent from the composer (or
    feedback left on one) and the agent's answer under it, oldest at the top,
    kept scrolled to the newest unless the reader has scrolled up. */
-export function AgentChat({ className }: { className?: string }) {
+function HostedAgentChat({ className }: { className?: string }) {
   const tasks = useStore((s) => s.tasks)
   const feedback = useStore((s) => s.feedback)
   const { data: session } = authClient.useSession()
@@ -97,3 +99,5 @@ function AgentAnswer({ turn }: { turn: ChatTurn }) {
   /* finished before answers were kept */
   return failure || <p className="text-ink-faint">{t('panels.chatDone')}</p>
 }
+
+export const AgentChat = hostedProducts ? HostedAgentChat : DesignConversation

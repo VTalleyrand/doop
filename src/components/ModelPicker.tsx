@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { Fragment, useState } from 'react'
 import { posthog } from '../lib/posthog'
 import { navigate } from '../App'
@@ -70,7 +71,7 @@ function modelName(models: RunnerOption[], id: string): string {
  * nothing connected there is nothing to choose between, so it says so and
  * links to Settings.
  */
-export function ModelPicker({ disabled = false }: { disabled?: boolean }) {
+function HostedModelPicker({ disabled = false }: { disabled?: boolean }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const runners = useAgentRunners()
@@ -187,3 +188,9 @@ export function ModelPicker({ disabled = false }: { disabled?: boolean }) {
     </DropdownMenu>
   )
 }
+
+export const ModelPicker = hostedProducts
+  ? HostedModelPicker
+  : function DesignPicker(_props: { disabled?: boolean }) {
+      return <span className="text-caption text-ink-soft">Zaboka Design</span>
+    }

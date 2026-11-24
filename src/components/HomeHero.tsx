@@ -1,4 +1,4 @@
-import { doopAgent, hostedProducts } from '../../zaboka/designPolicy'
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
   DRAFT_OPTIONS,
@@ -188,7 +188,7 @@ export function HomeHero({
 
   const beamOn = hovered ?? beamAt
 
-  if (hidden || !doopAgent) return null
+  if (hidden) return null
 
   return (
     <section className="relative overflow-hidden" data-slot="home-hero">
