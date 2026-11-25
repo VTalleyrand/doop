@@ -28,6 +28,27 @@ export interface DesignBridge {
   }): Promise<{ requestId: string; status: string; message?: string }>
   subscribe(requestId: string, listener: (update: DesignUpdate) => void): () => void
   cancel(requestId: string): Promise<unknown>
+  /** The Design agent's model and the owner's engines (newer Zaboka Desktop). */
+  models?(): Promise<DesignModels>
+  /** Sets the Design agent's own model; Zaboka checks it against its engines. */
+  setModel?(pick: DesignModelPick): Promise<DesignModels>
+}
+export interface DesignModelPick {
+  instanceId: string
+  model: string
+}
+export interface DesignEngine {
+  id: string
+  name: string
+  kind: string
+  ready: boolean
+  reason?: string
+  default: string
+  models: Array<{ id: string; label: string }>
+}
+export interface DesignModels {
+  current: DesignModelPick | null
+  engines: DesignEngine[]
 }
 declare global {
   interface Window {
@@ -170,4 +191,25 @@ export function useAgentTasks(): AgentTask[] {
 /** The turn Design is working on for this canvas, if any (the composer's Stop). */
 export function useBusyDesignTurn(canvasId: string): string | null {
   return useDesignTurns((s) => s.turns.find((t) => t.project === canvasId && t.busy)?.id ?? null)
+}
+
+/** The composer's model picker: what the Design agent runs on, from Zaboka. */
+export const useDesignModels = create<{ models: DesignModels | null; error?: string }>(() => ({ models: null }))
+export async function loadDesignModels(host = window.zabokaDesign) {
+  if (typeof host?.models !== 'function') return
+  try {
+    useDesignModels.setState({ models: await host.models(), error: undefined })
+  } catch {
+    useDesignModels.setState({ error: 'Zaboka could not list the models.' })
+  }
+}
+export async function chooseDesignModel(pick: DesignModelPick, host = window.zabokaDesign) {
+  if (typeof host?.setModel !== 'function') return
+  const before = useDesignModels.getState().models
+  if (before) useDesignModels.setState({ models: { ...before, current: pick }, error: undefined })
+  try {
+    useDesignModels.setState({ models: await host.setModel(pick), error: undefined })
+  } catch {
+    useDesignModels.setState({ models: before, error: 'Zaboka could not change the model.' })
+  }
 }

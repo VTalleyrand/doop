@@ -287,7 +287,7 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const t = useT()
-  const meter = hostedProducts ? meterText(allowance, t, pickedProvider, picked?.runner.name) : 'Zaboka Design'
+  const meter = hostedProducts ? meterText(allowance, t, pickedProvider, picked?.runner.name) : null
 
   useLayoutEffect(() => {
     if (inputRef.current) autosize(inputRef.current)

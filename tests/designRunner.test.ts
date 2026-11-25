@@ -6,7 +6,11 @@ import {
   designTask,
   leaveDesignProject,
   useDesignTurns,
+  useDesignModels,
+  loadDesignModels,
+  chooseDesignModel,
   type DesignBridge,
+  type DesignModels,
   type DesignUpdate,
 } from '../zaboka/designRunner'
 import { chatTurns } from '../src/lib/agentChat'
@@ -114,4 +118,38 @@ it("a Design turn is one of Doop's own chat cards, drawn by its chat", () => {
   expect(chatTurns([failed], [], 'u1')[0]).toEqual(
     expect.objectContaining({ state: 'failed', failureReason: 'Design stopped.', mine: false }),
   )
+})
+
+it("the composer's model picker reads and sets the Design agent's model through Zaboka", async () => {
+  const listed: DesignModels = {
+    current: { instanceId: 'claude', model: 'opus' },
+    engines: [
+      {
+        id: 'claude',
+        name: 'Claude',
+        kind: 'claudeAgent',
+        ready: true,
+        default: 'opus',
+        models: [
+          { id: 'opus', label: 'Opus' },
+          { id: 'sonnet', label: 'Sonnet' },
+        ],
+      },
+    ],
+  }
+  const picker = {
+    ...host,
+    models: vi.fn(async () => listed),
+    setModel: vi.fn(async (pick) => ({ ...listed, current: pick })),
+  }
+  await loadDesignModels(picker)
+  expect(useDesignModels.getState().models?.current?.model).toBe('opus')
+  await chooseDesignModel({ instanceId: 'claude', model: 'sonnet' }, picker)
+  expect(picker.setModel).toHaveBeenCalledWith({ instanceId: 'claude', model: 'sonnet' })
+  expect(useDesignModels.getState().models?.current?.model).toBe('sonnet')
+  // a refused pick goes back to what was set, with a word why
+  picker.setModel.mockRejectedValueOnce(Error('no'))
+  await chooseDesignModel({ instanceId: 'claude', model: 'opus' }, picker)
+  expect(useDesignModels.getState().models?.current?.model).toBe('sonnet')
+  expect(useDesignModels.getState().error).toMatch(/could not change/)
 })
