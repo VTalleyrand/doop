@@ -1,3 +1,4 @@
+import { hostedProducts } from '../../zaboka/designPolicy'
 import { useLocale, useT } from '../lib/i18n'
 import { setPromptBoxHidden, usePromptBoxHidden } from '../lib/homePreferences'
 import { LanguagePicker } from './LanguagePicker'
@@ -21,24 +22,27 @@ export function GeneralSettings() {
           <Note>{picked ? t('settings.languagePicked') : t('settings.languageServerDefault')}</Note>
         </CardRow>
       </SettingsCard>
-      <SettingsCard>
-        <CardHeader>
-          <CardTitle>{t('settings.homeDashboardTitle')}</CardTitle>
-          <CardDescription>{t('settings.homeDashboardDescription')}</CardDescription>
-        </CardHeader>
-        <CardRow
-          label={<label htmlFor="show-prompt-box">{t('settings.showPromptBox')}</label>}
-          action={
-            <Switch
-              id="show-prompt-box"
-              checked={!hidden}
-              onCheckedChange={(checked) => setPromptBoxHidden(!checked)}
-            />
-          }
-        >
-          <span className="text-body text-ink-soft">{t('settings.showPromptBoxHint')}</span>
-        </CardRow>
-      </SettingsCard>
+      {/* Doop's home dashboard: local Design opens on Zaboka's */}
+      {hostedProducts && (
+        <SettingsCard>
+          <CardHeader>
+            <CardTitle>{t('settings.homeDashboardTitle')}</CardTitle>
+            <CardDescription>{t('settings.homeDashboardDescription')}</CardDescription>
+          </CardHeader>
+          <CardRow
+            label={<label htmlFor="show-prompt-box">{t('settings.showPromptBox')}</label>}
+            action={
+              <Switch
+                id="show-prompt-box"
+                checked={!hidden}
+                onCheckedChange={(checked) => setPromptBoxHidden(!checked)}
+              />
+            }
+          >
+            <span className="text-body text-ink-soft">{t('settings.showPromptBoxHint')}</span>
+          </CardRow>
+        </SettingsCard>
+      )}
     </>
   )
 }

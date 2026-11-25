@@ -69,7 +69,12 @@ release upstream's own apps.
 
 `designPolicy.ts` owns the local UI boundary. `App` checks initial URLs and browser
 history; `navigate` checks in-app navigation. Only canvases, prototype presentation,
-local settings, and workspace fonts/libraries are admitted. Shared action-registry
+local settings (General, Appearance, Fonts; not Doop's agent connections, agent
+keys, account, plans or webhooks) and workspace fonts/libraries are admitted. A
+canvas stays in its project: Doop's home, new and duplicated canvases, hosted docs,
+support and plans are left out of its menus (projects live on Zaboka's Design
+dashboard), Settings opened from a canvas returns to it, and `designMessage`
+names Zaboka's Design agent where Doop's strings name its own. Shared action-registry
 filtering covers the palette and native menus; dialog wrappers prevent startup or
 query-string state from opening sharing, installers, upgrades, or app promotions.
 The door still owns local authentication: the account session, cursor identity,

@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
   hostedProducts: true,
+  designMessage: () => undefined,
 }))
 vi.mock('../src/lib/api', () => ({
   api: {

@@ -97,7 +97,7 @@ describe('nativeMenus', () => {
     const [edit, help] = ['edit', 'help'].map((id) => nativeMenus().find((m) => m.id === id)!)
     expect(items(edit!).map((i) => i.id)).not.toContain('undo')
     expect(items(edit!).map((i) => i.id)).not.toContain('redo')
-    expect(help!.items.map((i) => i?.id ?? null)).toEqual(['palette', null, 'shortcuts', null, 'docs'])
+    expect(help!.items.map((i) => i?.id ?? null)).toEqual(['palette', null, 'shortcuts']) // local Design: no hosted docs
   })
 
   it('marks toggles as checkable', () => {

@@ -64,13 +64,15 @@ function ActionRow({ action, label, icon }: { action: CanvasAction; label: strin
 export function MainMenu({ trigger }: { trigger: ReactNode }) {
   const t = useT()
   const general = (id: string) => ACTIONS.find((a) => a.id === id)!
+  /* local Design has no way back to Doop's own home (zaboka/designPolicy.ts) */
+  const goToFiles = ACTIONS.find((a) => a.id === 'go-to-files')
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="start" width="md">
-        {isEnabled(general('go-to-files')) && (
+        {goToFiles && isEnabled(goToFiles) && (
           <ActionRow
-            action={general('go-to-files')}
+            action={goToFiles}
             label={t('actions.goToFiles')}
             icon={<FolderIcon width={14} height={14} aria-hidden className="flex-none text-ink-faint" />}
           />

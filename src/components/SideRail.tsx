@@ -1,3 +1,4 @@
+import { designSettingsPath, hostedProducts } from '../../zaboka/designPolicy'
 import type { CSSProperties } from 'react'
 import { useAgentTasks } from '../../zaboka/designRunner'
 import { canEditOpenCanvas, useStore, type PanelTab } from '../lib/store'
@@ -88,32 +89,35 @@ export function SideRail({
         style={islandStyle}
       >
         {!guest && (
-          <ToolbarControl label={t('shell.settings')} onClick={() => navigate('/settings')}>
+          <ToolbarControl label={t('shell.settings')} onClick={() => navigate(designSettingsPath())}>
             <GearIcon />
           </ToolbarControl>
         )}
-        <DropdownMenu>
-          <Tooltip label={t('canvas.help')} side="left">
-            <DropdownMenuTrigger asChild>
-              <ToolbarButton
-                aria-label={t('canvas.help')}
-                className="data-[state=open]:bg-paper-deep data-[state=open]:text-ink"
-              >
-                <HelpIcon />
-              </ToolbarButton>
-            </DropdownMenuTrigger>
-          </Tooltip>
-          <DropdownMenuContent side="left" align="end" width="sm">
-            <DropdownMenuItem asChild>
-              <a href="/docs" target="_blank" rel="noopener noreferrer">
-                <BookOpenIcon /> {t('canvas.docs')}
-              </a>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => openSupportChat()}>
-              <CommentIcon /> {t('canvas.contactSupport')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Doop's hosted docs and support chat: not in local Design */}
+        {hostedProducts && (
+          <DropdownMenu>
+            <Tooltip label={t('canvas.help')} side="left">
+              <DropdownMenuTrigger asChild>
+                <ToolbarButton
+                  aria-label={t('canvas.help')}
+                  className="data-[state=open]:bg-paper-deep data-[state=open]:text-ink"
+                >
+                  <HelpIcon />
+                </ToolbarButton>
+              </DropdownMenuTrigger>
+            </Tooltip>
+            <DropdownMenuContent side="left" align="end" width="sm">
+              <DropdownMenuItem asChild>
+                <a href="/docs" target="_blank" rel="noopener noreferrer">
+                  <BookOpenIcon /> {t('canvas.docs')}
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => openSupportChat()}>
+                <CommentIcon /> {t('canvas.contactSupport')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {!guest && (
           <Tooltip label={t('canvas.youAre', { name: me.name })} side="left">
             <button

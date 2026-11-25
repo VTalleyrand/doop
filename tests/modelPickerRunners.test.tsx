@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({ runners: vi.fn(), models: vi.fn(), capture: vi
 vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
   hostedProducts: true,
+  designMessage: () => undefined,
 }))
 vi.mock('../src/lib/api', () => ({ api: { agentRunners: mocks.runners, agentModels: mocks.models } }))
 vi.mock('../src/lib/posthog', () => ({ posthog: { capture: mocks.capture } }))

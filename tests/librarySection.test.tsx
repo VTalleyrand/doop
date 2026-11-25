@@ -372,4 +372,5 @@ it('publishes the ticked components and leaves the rest', async () => {
 vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
   hostedProducts: true,
+  designMessage: () => undefined,
 }))

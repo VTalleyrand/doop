@@ -137,4 +137,5 @@ it('leaves a canceled workspace alone and makes a new one, since reactivating bi
 vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
   hostedProducts: true,
+  designMessage: () => undefined,
 }))

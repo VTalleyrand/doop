@@ -1,4 +1,4 @@
-import { hostedProducts } from '../../zaboka/designPolicy'
+import { designSettingsPath, hostedProducts } from '../../zaboka/designPolicy'
 import { CAPTURE_PREFIX, pasteWebCapture } from '../lib/webCapture'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { canEditOpenCanvas, pickedSelectors, roleOf, useStore } from '../lib/store'
@@ -854,9 +854,12 @@ export function CanvasPage({
       <AuthScreen>
         <AuthCard title={t('canvas.notFoundTitle')} align="center">
           <AuthCardText>{t('canvas.notFoundBody', { id: canvasId })}</AuthCardText>
-          <Button className="self-center" onClick={() => navigate('/')}>
-            {t('canvas.backToCanvases')}
-          </Button>
+          {/* local Design: All projects in Zaboka is the way back */}
+          {hostedProducts && (
+            <Button className="self-center" onClick={() => navigate('/')}>
+              {t('canvas.backToCanvases')}
+            </Button>
+          )}
         </AuthCard>
       </AuthScreen>
     )
@@ -1251,7 +1254,7 @@ export function CanvasPage({
                   <Button
                     variant="ghost"
                     className="h-11 justify-start gap-2.5 px-4 text-ink-soft"
-                    onClick={() => navigate('/settings')}
+                    onClick={() => navigate(designSettingsPath())}
                   >
                     <GearIcon /> {t('shell.settings')}
                   </Button>

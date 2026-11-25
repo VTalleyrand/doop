@@ -224,4 +224,5 @@ it.each(['https://doop.design', 'http://localhost:4301'])(
 vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
   hostedProducts: true,
+  designMessage: () => undefined,
 }))

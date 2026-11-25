@@ -5,6 +5,12 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { HomeHero } from '../src/components/HomeHero'
 import { GeneralSettings } from '../src/components/GeneralSettings'
 import { PROMPT_BOX_STORAGE_KEY, setPromptBoxHidden } from '../src/lib/homePreferences'
+// the home dashboard's prompt box is hosted Doop's (local Design opens on Zaboka's dashboard)
+vi.mock('../zaboka/designPolicy', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../zaboka/designPolicy')>()),
+  hostedProducts: true,
+  designMessage: () => undefined,
+}))
 
 vi.mock('../src/components/ModelPicker', () => ({ ModelPicker: () => null }))
 

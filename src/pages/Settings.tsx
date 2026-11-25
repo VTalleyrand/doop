@@ -64,7 +64,7 @@ function isPane(value: string | null): value is Pane {
 /** ?pane= deep-links a section — the connect modal sends people to ?pane=keys. */
 function initialPane(): Pane {
   const pane = new URLSearchParams(location.search).get('pane')
-  return isPane(pane) ? pane : 'agent'
+  return isPane(pane) ? pane : designSettingsPaneAllowed('agent') ? 'agent' : 'general'
 }
 
 /**
@@ -106,7 +106,7 @@ export function Settings() {
     <DashLayout className={railLayout}>
       {/* Settings is its own screen: a rail of its panes, and the way back */}
       <DashSidebar variant="rail">
-        <DashSidebarBrand />
+        <DashSidebarBrand onHome={() => navigate(back)} />
         <nav className="flex flex-col gap-0.5">
           <DashNavItem density="rail" icon={<ChevronLeftIcon size="rail" />} onClick={() => navigate(back)}>
             {back === '/' ? t('settings.backToCanvases') : t('settings.backToCanvas')}
@@ -150,22 +150,26 @@ export function Settings() {
           >
             {t('settings.appearanceTitle')}
           </DashNavItem>
-          <DashNavItem
-            density="rail"
-            icon={<SparkIcon size="rail" />}
-            active={pane === 'agent'}
-            onClick={() => setPane('agent')}
-          >
-            {t('settings.agentTitle')}
-          </DashNavItem>
-          <DashNavItem
-            density="rail"
-            icon={<KeyIcon size="rail" />}
-            active={pane === 'keys'}
-            onClick={() => setPane('keys')}
-          >
-            {t('settings.keysTitle')}
-          </DashNavItem>
+          {designSettingsPaneAllowed('agent') && (
+            <DashNavItem
+              density="rail"
+              icon={<SparkIcon size="rail" />}
+              active={pane === 'agent'}
+              onClick={() => setPane('agent')}
+            >
+              {t('settings.agentTitle')}
+            </DashNavItem>
+          )}
+          {designSettingsPaneAllowed('keys') && (
+            <DashNavItem
+              density="rail"
+              icon={<KeyIcon size="rail" />}
+              active={pane === 'keys'}
+              onClick={() => setPane('keys')}
+            >
+              {t('settings.keysTitle')}
+            </DashNavItem>
+          )}
           {hostedProducts && (
             <DashNavItem
               density="rail"
@@ -215,15 +219,19 @@ export function Settings() {
               <TabsTrigger value="general">
                 <GearIcon size="rail" /> {t('settings.generalTitle')}
               </TabsTrigger>
-              <TabsTrigger value="agent">
-                <SparkIcon size="rail" /> {t('settings.agentTitle')}
-              </TabsTrigger>
+              {designSettingsPaneAllowed('agent') && (
+                <TabsTrigger value="agent">
+                  <SparkIcon size="rail" /> {t('settings.agentTitle')}
+                </TabsTrigger>
+              )}
               <TabsTrigger value="fonts">
                 <TextIcon size="rail" /> {t('settings.fontsTitle')}
               </TabsTrigger>
-              <TabsTrigger value="keys">
-                <KeyIcon size="rail" /> {t('settings.keysTitle')}
-              </TabsTrigger>
+              {designSettingsPaneAllowed('keys') && (
+                <TabsTrigger value="keys">
+                  <KeyIcon size="rail" /> {t('settings.keysTitle')}
+                </TabsTrigger>
+              )}
               {hostedProducts && (
                 <TabsTrigger value="webhooks">
                   <BellIcon size="rail" /> {t('settings.webhooksTitle')}
