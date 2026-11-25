@@ -1,5 +1,5 @@
 import { hostedProducts } from '../../zaboka/designPolicy'
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { posthog } from '../lib/posthog'
 import { navigate } from '../App'
 import { cn } from '@/lib/utils'
@@ -7,7 +7,7 @@ import { BrandMark, type Brand } from './ui/brand-mark'
 import { EffortSlider } from './ConnectionTable'
 import { DoopMark } from './Logo'
 import { useAgentModels } from './ModelAccount'
-import { chooseDesignModel, loadDesignModels, useDesignModels } from '../../zaboka/designRunner'
+import { ZabokaModelPicker } from '../../zaboka/ZabokaModelPicker'
 import { useAgentRunners, useRunnerPick } from '../lib/runnerPick'
 import { resolveRunnerPick, type AgentRunner, type RunnerOption, type RunnerProvider } from '../../shared/agentRunner'
 import { useT, type PlainMessageKey } from '@/lib/i18n'
@@ -190,90 +190,7 @@ function HostedModelPicker({ disabled = false }: { disabled?: boolean }) {
   )
 }
 
-/* Zaboka's engines, by driver, as Doop's brand marks */
-const ENGINE_MARK: Partial<Record<string, Brand>> = {
-  claudeAgent: 'claude',
-  codex: 'openai',
-  gemini: 'gemini',
-  geminiCli: 'gemini',
-  openrouter: 'openrouter',
-  deepseek: 'deepseek',
-  kimi: 'kimi',
-}
-
-/**
- * In Zaboka Design the agent is Zaboka's Design agent, so the picker lists
- * the owner's Zaboka engines and their models, and a pick is that agent's
- * own model (the same setting as in Zaboka). Older Desktops without the
- * bridge's models() show nothing here.
- */
-function DesignModelPicker({ disabled = false }: { disabled?: boolean }) {
-  const t = useT()
-  const models = useDesignModels((s) => s.models)
-  const error = useDesignModels((s) => s.error)
-  const available = typeof window.zabokaDesign?.models === 'function'
-  useEffect(() => {
-    if (available) void loadDesignModels()
-  }, [available])
-  if (!available) return null
-  const current = models?.current ?? null
-  const engines = models?.engines ?? []
-  const engine = current ? engines.find((e) => e.id === current.instanceId) : undefined
-  const modelId = current ? current.model || engine?.default || '' : ''
-  const label = engine
-    ? (engine.models.find((m) => m.id === modelId)?.label ?? (modelId || engine.name))
-    : models
-      ? 'Choose a model'
-      : '…'
-  const mark = engine ? ENGINE_MARK[engine.kind] : undefined
-
-  return (
-    <DropdownMenu
-      onOpenChange={(open) => {
-        if (open) void loadDesignModels()
-      }}
-    >
-      <DropdownMenuTrigger asChild>
-        <MenuButton
-          variant="quiet"
-          disabled={disabled || !models}
-          aria-label={t('panels.modelAria', { label })}
-          className={cn('min-w-0 shrink gap-[5px]')}
-          icon={
-            <span className="grid size-3 flex-none place-items-center">
-              {mark ? <BrandMark brand={mark} size={12} /> : <DoopMark size={11} className="block" />}
-            </span>
-          }
-        >
-          <span className="truncate">{label}</span>
-        </MenuButton>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="end" width="auto" className="max-h-[60vh] overflow-y-auto">
-        {engines.map((e) => (
-          <Fragment key={e.id}>
-            <DropdownMenuCaption title={e.ready ? undefined : e.reason}>
-              {engines.length > 1 ? e.name : t('models.model')}
-              {!e.ready && <span className="text-ink-faint"> · not ready</span>}
-            </DropdownMenuCaption>
-            <DropdownMenuRadioGroup
-              value={current?.instanceId === e.id ? modelId : ''}
-              onValueChange={(model) => void chooseDesignModel({ instanceId: e.id, model })}
-            >
-              {e.models.map((m) => (
-                <DropdownMenuRadioItem key={m.id} value={m.id} disabled={!e.ready}>
-                  {m.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </Fragment>
-        ))}
-        {engines.length === 0 && (
-          <DropdownMenuCaption className="pb-2 text-ink-soft">No engines are set up in Zaboka.</DropdownMenuCaption>
-        )}
-        {error && <DropdownMenuCaption className="pb-2 text-ink-faint">{error}</DropdownMenuCaption>}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-export const ModelPicker = hostedProducts ? HostedModelPicker : DesignModelPicker
+/* In Zaboka Design the agent is Zaboka's Design agent: its model is picked
+   with Zaboka's own picker, drawn as everywhere else in Zaboka
+   (zaboka/ZabokaModelPicker.tsx). */
+export const ModelPicker = hostedProducts ? HostedModelPicker : ZabokaModelPicker

@@ -1,0 +1,270 @@
+/* The Design agent's model picker (ZabokaModelPicker.tsx), drawn with
+   Zaboka's own menu material and spacing (Zaboka's src/styles.css and
+   src/components/ModelPicker.tsx) so it reads as the same picker as
+   everywhere else in Zaboka. Doop's `.dark` is Zaboka's theme handed over
+   by the door. */
+:root {
+  --zmp-material: linear-gradient(145deg, #ffffffb8, #ffffff8c);
+  --zmp-edge: #ffffffc2;
+  --zmp-shadow: inset 0 1px 0 #ffffff70, 0 8px 28px #0000000c;
+  --zmp-line: rgba(18, 18, 21, 0.09);
+  --zmp-ink: #111111;
+  --zmp-muted: #666666;
+  --zmp-accent: #e8e8e8;
+  --zmp-ready: #1f7048;
+  --zmp-chip: #f0f0f0;
+}
+.dark {
+  --zmp-material: linear-gradient(145deg, #2a2a2ac4, #222222a6);
+  --zmp-edge: #ffffff14;
+  --zmp-shadow: inset 0 1px 0 #ffffff0a, 0 8px 28px #00000030;
+  --zmp-line: rgba(255, 255, 255, 0.09);
+  --zmp-ink: #f2f2f2;
+  --zmp-muted: #aaaaaa;
+  --zmp-accent: #2c2c2c;
+  --zmp-ready: #3dd68c;
+  --zmp-chip: #2a2a2a;
+}
+
+.zmp-trigger {
+  display: inline-flex;
+  min-width: 0;
+  height: 28px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 12.5px;
+  color: var(--zmp-muted);
+  transition:
+    color 150ms,
+    transform 150ms;
+}
+.zmp-trigger:hover:not(:disabled) {
+  color: var(--zmp-ink);
+}
+.zmp-trigger:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.zmp-trigger:disabled {
+  opacity: 0.5;
+}
+.zmp-trigger-label {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zmp-chevron {
+  flex: none;
+  opacity: 0.6;
+}
+
+.zmp-panel {
+  z-index: 80;
+  display: flex;
+  width: min(372px, 94vw);
+  height: min(27rem, var(--radix-popover-content-available-height));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--zmp-edge);
+  border-radius: 24px;
+  background: var(--zmp-material);
+  box-shadow: var(--zmp-shadow);
+  color: var(--zmp-ink);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  transform-origin: var(--radix-popover-content-transform-origin);
+  animation: zmp-in 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes zmp-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zmp-panel {
+    animation: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .zmp-panel {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.zmp-search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--zmp-line);
+  padding: 12px 16px;
+}
+.zmp-search-icon {
+  flex: none;
+  color: var(--zmp-muted);
+}
+.zmp-search input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  color: var(--zmp-ink);
+  outline: none;
+}
+.zmp-search input::placeholder {
+  color: var(--zmp-muted);
+}
+
+.zmp-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+.zmp-rail {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-right: 1px solid var(--zmp-line);
+  padding: 8px;
+}
+.zmp-rail-button {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: background-color 150ms;
+}
+.zmp-rail-button:hover {
+  background: color-mix(in srgb, var(--zmp-accent) 60%, transparent);
+}
+.zmp-rail-button[aria-pressed='true'] {
+  background: var(--zmp-accent);
+}
+
+.zmp-list {
+  min-width: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+}
+.zmp-head {
+  padding: 6px 10px 4px;
+}
+.zmp-head-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.zmp-head-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 600;
+}
+.zmp-head-note {
+  margin: 4px 0 0;
+  padding-left: 28px;
+  font-size: 12.5px;
+  color: var(--zmp-muted);
+}
+.zmp-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--zmp-muted) 40%, transparent);
+}
+.zmp-dot[data-ready] {
+  background: var(--zmp-ready);
+}
+.zmp-rule {
+  margin: 8px 4px;
+  border-top: 1px solid var(--zmp-line);
+}
+
+.zmp-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0;
+  border-radius: 12px;
+  padding: 8px 8px 8px 10px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.375;
+  color: var(--zmp-ink);
+  transition: background-color 150ms;
+}
+.zmp-row:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--zmp-accent) 60%, transparent);
+}
+.zmp-row[data-lit] {
+  background: var(--zmp-accent);
+}
+.zmp-row:disabled {
+  color: var(--zmp-muted);
+  cursor: not-allowed;
+}
+.zmp-row-mark {
+  display: flex;
+  flex: none;
+}
+.zmp-row-mark[data-off] {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+.zmp-row-label {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+.zmp-chip {
+  flex: none;
+  margin-left: auto;
+  border-radius: 4px;
+  padding: 1px 4px;
+  background: var(--zmp-chip);
+  font-size: 10px;
+  color: var(--zmp-muted);
+}
+.zmp-group {
+  margin-bottom: 4px;
+}
+.zmp-group-name {
+  padding: 8px 10px 4px;
+  font-size: 12.5px;
+  color: var(--zmp-muted);
+}
+.zmp-empty {
+  padding: 12px 10px;
+  font-size: 13px;
+  color: var(--zmp-muted);
+}
+.zmp-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: var(--zmp-chip);
+  font-weight: 600;
+  color: var(--zmp-muted);
+}
