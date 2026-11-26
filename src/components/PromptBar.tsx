@@ -3,6 +3,8 @@ import {
   cancelDesign,
   leaveDesignProject,
   submitDesign,
+  uploadDesignFiles,
+  DESIGN_FILE_MAX_BYTES,
   useBusyDesignTurn,
   useDesignTurns,
 } from '../../zaboka/designRunner'
@@ -134,9 +136,15 @@ async function sendPrompt(args: {
     try {
       // Check capability before uploading references or changing the canvas.
       if (window.zabokaDesign?.version !== 1) throw Error('Open this canvas in Zaboka Design to use the Design agent.')
-      const refs = await uploadImageFrames(canvasId, files, { fallbackName: 'Attached image' })
+      const documents = files.filter((file) => !file.type.startsWith('image/'))
+      const attached = await uploadDesignFiles(canvasId, documents)
+      const refs = await uploadImageFrames(
+        canvasId,
+        files.filter((file) => file.type.startsWith('image/')),
+        { fallbackName: 'Attached image' },
+      )
       const context = JSON.stringify({ canvas_id: canvasId, scope, reference_frame_ids: refs.map((f) => f.id) })
-      await submitDesign(canvasId, `${text}\n\nDesign context (data): ${context}`, undefined, text)
+      await submitDesign(canvasId, `${text}\n\nDesign context (data): ${context}`, undefined, text, attached)
       store.setComposerDraft(canvasId, '')
       flyToNextFrame(
         canvasId,
@@ -281,7 +289,7 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
   /* attachment slips (too big, too many) — local and brief, unlike a failed
      send, which the store keeps until the draft changes */
   const [attachError, setAttachError] = useState<string | null>(null)
-  /* an image file is being dragged over the composer */
+  /* a file is being dragged over the composer */
   const [dropping, setDropping] = useState(false)
   const error = attachError ?? sendError
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -314,12 +322,21 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
   }
 
   function addFiles(list: Iterable<File>) {
-    const images = [...list].filter((f) => f.type.startsWith('image/'))
-    if (!images.length) return
-    const oversize = images.find((f) => f.size > MAX_ATTACHMENT_BYTES)
-    const fitting = images.filter((f) => f.size <= MAX_ATTACHMENT_BYTES)
+    const picked = [...list].filter((f) => !hostedProducts || f.type.startsWith('image/'))
+    if (!picked.length) return
+    const limit = (file: File) =>
+      !hostedProducts && !file.type.startsWith('image/') ? DESIGN_FILE_MAX_BYTES : MAX_ATTACHMENT_BYTES
+    const oversize = picked.find((f) => f.size > limit(f))
+    const empty = picked.find((f) => !f.size)
+    const fitting = picked.filter((f) => f.size > 0 && f.size <= limit(f))
     const room = MAX_ATTACHMENTS - attachments.length
-    if (oversize) showError(t('panels.promptTooBig', { name: oversize.name }))
+    if (empty) showError(`${empty.name} is empty`)
+    else if (oversize)
+      showError(
+        !hostedProducts && !oversize.type.startsWith('image/')
+          ? `${oversize.name} exceeds the 64 MB limit`
+          : t('panels.promptTooBig', { name: oversize.name }),
+      )
     else if (fitting.length > room) showError(t('panels.promptTooMany', { count: MAX_ATTACHMENTS }))
     const ok = fitting.slice(0, Math.max(0, room))
     if (ok.length)
@@ -332,8 +349,9 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
   }
 
   async function submit(prompt: string) {
-    const clean = prompt.trim()
+    const clean = prompt.trim() || (!hostedProducts && attachments.length ? 'Read the attached files.' : '')
     if (!clean || busy) return
+    setAttachError(null)
     const files = attachments.map((a) => a.file)
     await sendPrompt({ canvasId, text: clean, files, scope: chip?.scope, allowance })
     /* the thumbnails go once the card is queued: the files were handed to
@@ -358,7 +376,7 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
     }
   }
 
-  /* dropped images attach like pasted ones; claiming the drag keeps the
+  /* dropped files attach like pasted ones; claiming the drag keeps the
      canvas, which listens on the window, from turning it into frames */
   function onDragOver(e: DragEvent<HTMLDivElement>) {
     if (!e.dataTransfer.types.includes('Files')) return
@@ -391,8 +409,23 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {attachments.map((a) => (
-            <div key={a.preview} className="relative h-11 w-11 overflow-hidden rounded-[7px] bg-paper shadow-ring">
-              <img src={a.preview} alt={a.file.name} className="block h-full w-full object-cover" />
+            <div
+              key={a.preview}
+              className={cn(
+                'relative h-11 overflow-hidden rounded-[7px] bg-paper shadow-ring',
+                a.file.type.startsWith('image/') ? 'w-11' : 'flex max-w-full items-center gap-2 px-2 pr-7',
+              )}
+            >
+              {a.file.type.startsWith('image/') ? (
+                <img src={a.preview} alt={a.file.name} className="block h-full w-full object-cover" />
+              ) : (
+                <>
+                  <AttachmentIcon className="size-3.5 shrink-0 text-ink-faint" />
+                  <span className="min-w-0 truncate text-[12px]" title={a.file.name}>
+                    {a.file.name}
+                  </span>
+                </>
+              )}
               <Button
                 variant="bare"
                 className="absolute right-0.5 top-0.5 size-4 justify-center rounded-full bg-black/55 p-0 text-xs leading-none text-white hover:bg-black/70 hover:text-white"
@@ -416,7 +449,7 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
         <input
           ref={fileRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+          accept={hostedProducts ? 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml' : undefined}
           multiple
           hidden
           onChange={(e) => {
@@ -470,7 +503,9 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
           onKeyDown={onKeyDown}
           onChange={(e) => setDraft(canvasId, e.target.value)}
           onPaste={(e) => {
-            const images = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'))
+            const images = [...(e.clipboardData?.files ?? [])].filter(
+              (f) => !hostedProducts || f.type.startsWith('image/'),
+            )
             if (images.length) {
               e.preventDefault()
               addFiles(images)
@@ -498,7 +533,7 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
               className="inline-flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-faint"
               /* while the button is disabled the wrapper takes its tab stop,
                  so the meter can be reached and read without a pointer */
-              tabIndex={busy || !text.trim() ? 0 : -1}
+              tabIndex={busy || (!text.trim() && (hostedProducts || !attachments.length)) ? 0 : -1}
               aria-label={meter ?? undefined}
             >
               {stoppable ? (
@@ -520,7 +555,7 @@ export function PromptBar({ canvasId }: { canvasId: string }) {
                   className="size-7 rounded-full"
                   type="submit"
                   aria-label={t('panels.promptSend')}
-                  disabled={busy || !text.trim()}
+                  disabled={busy || (!text.trim() && (hostedProducts || !attachments.length))}
                 >
                   {busy ? <span aria-hidden>…</span> : <ArrowUpIcon className="size-3.5" strokeWidth={1.6} />}
                 </Button>

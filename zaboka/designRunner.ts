@@ -19,12 +19,26 @@ export interface DesignUpdate {
   superseded?: boolean
   messages?: DesignMessage[]
 }
+export interface DesignAttachment {
+  attachmentId: string
+  name: string
+  bytes: number
+}
+export const DESIGN_FILE_MAX_BYTES = 64 * 1024 * 1024
+export const DESIGN_MAX_ATTACHMENTS = 4
 export interface DesignBridge {
   version: number
+  uploadAttachment?(input: {
+    attachmentId: string
+    projectId: string
+    name: string
+    data: Uint8Array
+  }): Promise<DesignAttachment>
   submitPrompt(input: {
     requestId: string
     projectId: string
     prompt: string
+    attachmentIds?: string[]
   }): Promise<{ requestId: string; status: string; message?: string }>
   subscribe(requestId: string, listener: (update: DesignUpdate) => void): () => void
   cancel(requestId: string): Promise<unknown>
@@ -60,6 +74,7 @@ export interface DesignTurn {
   project: string
   /** what the person typed, as the chat shows it (the prompt sent also carries the canvas context) */
   prompt: string
+  attachments?: DesignAttachment[]
   at: number
   endedAt?: number
   busy: boolean
@@ -76,17 +91,79 @@ function bridge(): DesignBridge {
   if (host?.version !== 1) throw Error('Open this canvas in Zaboka Design to use the Design agent.')
   return host
 }
-export async function submitDesign(project: string, prompt: string, host = bridge(), shown = prompt) {
+
+// A failed send keeps File objects in the composer. Reuse an acknowledged upload
+// on retry, scoped to this project and bridge, without trusting a caller's path.
+const uploaded = new WeakMap<
+  File,
+  { project: string; host: DesignBridge; attachmentId: string; receipt?: DesignAttachment }
+>()
+export async function uploadDesignFiles(project: string, files: File[], host = bridge()): Promise<DesignAttachment[]> {
+  if (location.pathname !== `/c/${project}` && location.pathname !== `/c/${project}/`)
+    throw Error('Open the current Design project first.')
+  if (!files.length) return []
+  if (!host.uploadAttachment) throw Error('Update Zaboka Desktop to attach files to Design messages.')
+  if (files.length > DESIGN_MAX_ATTACHMENTS) throw Error('Attach up to four files.')
+  for (const file of files) {
+    if (!file.size || file.size > DESIGN_FILE_MAX_BYTES)
+      throw Error(`${file.name}: attach a nonempty file up to 64 MB.`)
+  }
+  const receipts: DesignAttachment[] = []
+  for (const file of files) {
+    const saved = uploaded.get(file)
+    if (saved?.project === project && saved.host === host && saved.receipt) {
+      receipts.push(saved.receipt)
+      continue
+    }
+    const attachmentId = saved?.project === project && saved.host === host ? saved.attachmentId : crypto.randomUUID()
+    uploaded.set(file, { project, host, attachmentId })
+    const receipt = await host.uploadAttachment({
+      attachmentId,
+      projectId: project,
+      name: file.name,
+      data: new Uint8Array(await file.arrayBuffer()),
+    })
+    if (receipt.attachmentId !== attachmentId || receipt.bytes !== file.size)
+      throw Error('Design did not confirm the attachment.')
+    uploaded.set(file, { project, host, attachmentId, receipt })
+    receipts.push(receipt)
+  }
+  return receipts
+}
+
+export async function submitDesign(
+  project: string,
+  prompt: string,
+  host = bridge(),
+  shown = prompt,
+  attachments: DesignAttachment[] = [],
+) {
   if (location.pathname !== `/c/${project}` && location.pathname !== `/c/${project}/`)
     throw Error('Open the current Design project first.')
   if (useDesignTurns.getState().turns.some((t) => t.project === project && t.busy))
     throw Error('Wait for Design or stop the current turn first.')
   const id = crypto.randomUUID()
   useDesignTurns.setState((s) => ({
-    turns: [...s.turns, { id, project, prompt: shown, at: Date.now(), busy: true, messages: [] }],
+    turns: [
+      ...s.turns,
+      {
+        id,
+        project,
+        prompt: shown,
+        ...(attachments.length ? { attachments } : {}),
+        at: Date.now(),
+        busy: true,
+        messages: [],
+      },
+    ],
   }))
   try {
-    const receipt = await host.submitPrompt({ requestId: id, projectId: project, prompt })
+    const receipt = await host.submitPrompt({
+      requestId: id,
+      projectId: project,
+      prompt,
+      ...(attachments.length ? { attachmentIds: attachments.map((file) => file.attachmentId) } : {}),
+    })
     if (receipt.requestId !== id || receipt.status !== 'accepted')
       throw Error(receipt.message ?? 'Design did not accept the request.')
     if (location.pathname !== `/c/${project}` && location.pathname !== `/c/${project}/`) {
@@ -161,7 +238,7 @@ export function designTask(turn: DesignTurn, userId?: string): AgentTask {
     id: turn.id,
     agentName: DESIGN_AGENT,
     color: '#6466e9',
-    status: turn.prompt,
+    status: [turn.prompt, ...(turn.attachments ?? []).map((file) => `Attached: ${file.name}`)].join('\n'),
     startedAt: turn.at,
     claimedAt: turn.at,
     queuedBy: 'You',

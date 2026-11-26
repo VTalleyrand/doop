@@ -45,6 +45,9 @@ export function designSettingsPath(): string {
 const DESIGN_MESSAGES: Record<string, string> = {
   'panels.activityNoTasks': 'No tasks yet. Ask Design below — what it works on shows up here.',
   'panels.activityEmpty': 'No activity yet. Add a frame, or ask Design.',
+  'panels.promptAttach': 'Attach files',
+  'panels.promptAttachTitle': 'Attach images, HTML, PDF, ZIP or other files',
+  'panels.promptTooMany': 'Up to {count} files per request',
   'panels.promptAria': 'Ask Design',
   'panels.promptPlaceholder': 'Ask Design to design something…',
   'panels.promptSent': 'Design is on it — watch the canvas',
