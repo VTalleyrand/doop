@@ -270,8 +270,9 @@ export function ElementPanel({
     <Panel
       surface={surface}
       className={cn(
-        'w-[244px]',
-        surface === 'floating' ? 'top-2.5 max-h-[calc(100%-24px)] transition-[right] duration-150' : 'border-l',
+        surface !== 'embedded' && 'w-[244px]',
+        surface === 'floating' && 'top-2.5 max-h-[calc(100%-24px)] transition-[right] duration-150',
+        surface === 'docked' && 'border-l',
         className,
       )}
       style={style}

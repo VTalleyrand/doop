@@ -39,7 +39,15 @@ export function AppearanceSettings() {
         </CardHeader>
         <CardRow label={t('settings.panelsRow')}>
           <PanelLayoutPicker />
-          <Note>{t(panelLayout === 'docked' ? 'settings.panelsDockedNote' : 'settings.panelsFloatingNote')}</Note>
+          <Note>
+            {t(
+              panelLayout === 'studio'
+                ? 'settings.panelsStudioNote'
+                : panelLayout === 'docked'
+                  ? 'settings.panelsDockedNote'
+                  : 'settings.panelsFloatingNote',
+            )}
+          </Note>
         </CardRow>
       </SettingsCard>
     </>

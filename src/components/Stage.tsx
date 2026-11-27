@@ -190,6 +190,7 @@ export function Stage({
   insets = NO_INSETS,
   bounds,
   docked = false,
+  zoomSlot,
 }: {
   onAddFrame: () => void
   /** px the top bar, floating panels and islands cover at each of the
@@ -201,6 +202,8 @@ export function Stage({
   bounds?: StageInsets
   /** the panels are docked, so the tool rail is a full-height column too */
   docked?: boolean
+  /** studio layout: where the zoom menu goes instead of the floating pill */
+  zoomSlot?: HTMLElement | null
 }) {
   const ref = useRef<HTMLDivElement>(null)
   /* read by the fit callbacks, which outlive a render */
@@ -1325,6 +1328,7 @@ export function Stage({
           onZoomTo={(zoom) => ref.current && zoomCentered(ref.current, zoom)}
           onFit={fit}
           onFitSelection={fitSelection}
+          slot={zoomSlot}
         />
 
         {canvas && (

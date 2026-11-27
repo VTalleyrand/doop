@@ -86,6 +86,9 @@ export const settings: Catalog['settings'] = {
     'Como o editor do canvas organiza Camadas, o inspetor e Agentes neste navegador. Painéis flutuantes ficam sobre o canvas; painéis fixos encostam nas bordas da janela, com o canvas entre eles.',
   panelsRow: 'Layout',
   panelsAria: 'Painéis do canvas',
+  panelsStudio: 'Estúdio',
+  panelsStudioNote:
+    'Chat, Camadas e Comentários dividem a coluna da esquerda; as propriedades da seleção ficam à direita.',
   panelsFloating: 'Flutuantes',
   panelsDocked: 'Fixos',
   panelsFloatingNote: 'Os painéis flutuam sobre o canvas.',

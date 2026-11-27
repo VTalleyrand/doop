@@ -109,6 +109,10 @@ interface State {
   layersOpen: boolean
   /** which face the Layers panel shows: the layer tree, or the design tokens */
   layersTab: 'layers' | 'components' | 'tokens'
+  /** the studio layout's left column: the Layers panel, or the side panel
+   *  (chat, comments, activity, memory) on `panelTab`. Picking a tab of
+   *  either moves the column there. */
+  sidebarFace: 'layers' | 'panel'
   /** ⌘. — every panel and toolbar is off screen, leaving only the canvas.
    *  A plain overlay flag: the panels' own open/closed state is untouched
    *  underneath, so toggling back shows exactly what was open before */
@@ -272,6 +276,7 @@ interface State {
   setElementPanelOpen(v: boolean): void
   setLayersOpen(v: boolean): void
   setLayersTab(tab: 'layers' | 'components' | 'tokens'): void
+  setSidebarFace(face: 'layers' | 'panel'): void
   toggleUiHidden(): void
   setPrototypeMode(on: boolean): void
   setViewport(v: Viewport): void
@@ -344,6 +349,7 @@ export const useStore = create<State>((set, get) => ({
   elementPanelOpen: false,
   layersOpen: readLayersOpen(),
   layersTab: 'layers',
+  sidebarFace: 'panel',
   uiHidden: false,
   prototypeMode: false,
   viewport: { x: 0, y: 0, zoom: 1 },
@@ -596,7 +602,7 @@ export const useStore = create<State>((set, get) => ({
         : [proposal, ...s.proposals].slice(0, 100)
       return { proposals }
     }),
-  setPanelTab: (panelTab) => set({ panelTab }),
+  setPanelTab: (panelTab) => set({ panelTab, sidebarFace: 'panel' }),
   pushNotice: (text, options) => {
     const busy = options?.busy === true
     const at = Date.now()
@@ -744,7 +750,8 @@ export const useStore = create<State>((set, get) => ({
     }
     set({ layersOpen })
   },
-  setLayersTab: (layersTab) => set({ layersTab }),
+  setLayersTab: (layersTab) => set({ layersTab, sidebarFace: 'layers' }),
+  setSidebarFace: (sidebarFace) => set({ sidebarFace }),
   /* hidden guides cannot stay selected: Delete would remove one unseen */
   toggleUiHidden: () => set((s) => ({ uiHidden: !s.uiHidden, ...(s.uiHidden ? {} : { selectedGuideId: null }) })),
   setPrototypeMode: (prototypeMode) => set({ prototypeMode }),

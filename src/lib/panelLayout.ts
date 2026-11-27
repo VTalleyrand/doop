@@ -1,15 +1,17 @@
 import { useSyncExternalStore } from 'react'
 
 /** How the canvas editor lays out its side panels: islands floating over
- *  the board, or columns docked to the window's edges with the board
- *  between them. */
-export type PanelLayout = 'floating' | 'docked'
+ *  the board, columns docked to the window's edges with the board between
+ *  them, or the studio (the default): one card under a slim bar, with Chat,
+ *  Layers and Comments as tabs of a left column, the tools beside it and the
+ *  properties of the selection in a right column. */
+export type PanelLayout = 'studio' | 'floating' | 'docked'
 
 /* Per browser, like the theme: it is how this device's editor looks. */
 export const PANEL_LAYOUT_STORAGE_KEY = 'doop:panel-layout'
 
 export function isPanelLayout(value: unknown): value is PanelLayout {
-  return value === 'floating' || value === 'docked'
+  return value === 'studio' || value === 'floating' || value === 'docked'
 }
 
 /* Storage is read every time, so a pick made in another tab while no page
@@ -27,7 +29,7 @@ export function getPanelLayout(): PanelLayout {
   } catch {
     /* storage unavailable: the default stands */
   }
-  return 'floating'
+  return 'studio'
 }
 
 export function setPanelLayout(layout: PanelLayout): void {

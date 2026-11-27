@@ -54,7 +54,8 @@ export function PagePanel({
           <PageIcon size="rail" className="flex-none text-ink-faint" />
           <span className="truncate">{page.name}</span>
         </span>
-        <PanelClose onClick={() => setOpen(false)} />
+        {/* studio keeps the page in its column: nothing to close */}
+        {surface !== 'embedded' && <PanelClose onClick={() => setOpen(false)} />}
       </PanelHeader>
       <section className="border-b border-line-soft px-3 py-2">
         <h3 className="mb-1.5 flex h-5 items-center text-label font-normal text-ink-soft">

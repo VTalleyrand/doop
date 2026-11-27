@@ -343,4 +343,13 @@ export const panels = {
   protoNothing: 'Nothing to play yet',
   protoNothingText: 'This page of the canvas has no frames.',
   protoOpenCanvas: 'Open the canvas',
+  studioTabsAria: 'Sidebar',
+  studioChat: 'Chat',
+  studioMore: 'More',
+  studioCollapse: 'Hide sidebar',
+  studioExpand: 'Show sidebar',
+  studioBackToChat: 'Back to chat',
+  studioHideProperties: 'Hide properties',
+  studioShowProperties: 'Show properties',
+  studioPages: 'Pages',
 } as const

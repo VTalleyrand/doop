@@ -1,4 +1,5 @@
 import { useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore } from '../lib/store'
 import { isDrawingTool } from '../lib/tools'
 import { useIsMobile } from '../hooks/use-mobile'
@@ -15,7 +16,8 @@ import {
 } from './ui/dropdown-menu'
 import { Toolbar, ToolbarButton } from './ui/toolbar'
 import { Input } from './ui/input'
-import { MinusIcon, PlusIcon } from './ui/icons'
+import { Button } from './ui/button'
+import { ChevronDownIcon, MinusIcon, PlusIcon } from './ui/icons'
 import { useT } from '../lib/i18n'
 
 /* The zoom pill at the bottom right of the open canvas: step out, the current
@@ -31,8 +33,12 @@ export function ZoomControls({
   onZoomTo,
   onFit,
   onFitSelection,
+  slot,
 }: {
   labelRef: RefObject<HTMLSpanElement>
+  /** the studio layout's properties header: the level goes there as a
+   *  compact "56% ⌄" menu instead of the floating pill */
+  slot?: HTMLElement | null
   /** ⌘. has hidden the chrome: display:none, so the label ref stays mounted */
   hidden: boolean
   onZoomIn: () => void
@@ -66,6 +72,95 @@ export function ZoomControls({
   const hint = (keys: string) => !isMobile && <MenuHint>{keys}</MenuHint>
   const stepBtn = 'min-h-0'
 
+  const menu = (side: 'top' | 'bottom') => (
+    <DropdownMenuContent side={side} align="end" width="md">
+      <div className="p-1.5">
+        <Input
+          variant="mono"
+          inputSize="sm"
+          aria-label={t('canvas.zoomLevel')}
+          value={draft}
+          autoFocus
+          onFocus={(e) => e.currentTarget.select()}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            /* the menu's own keys (typeahead, arrows) stay out of the
+               field; Esc still closes the menu */
+            if (e.key !== 'Escape') e.stopPropagation()
+            if (e.key === 'Enter') applyDraft()
+          }}
+        />
+      </div>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={onZoomIn}>
+        {t('canvas.zoomIn')}
+        {hint(`${MOD_KEY}+`)}
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={onZoomOut}>
+        {t('canvas.zoomOut')}
+        {hint(`${MOD_KEY}−`)}
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={onFit}>
+        {t('canvas.zoomToFit')}
+        {hint('⇧1')}
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={!hasSelection} onSelect={onFitSelection}>
+        {t('canvas.zoomToSelection')}
+        {hint('⇧2')}
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => onZoomTo(0.5)}>{t('canvas.zoomTo', { percent: 50 })}</DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => onZoomTo(1)}>
+        {t('canvas.zoomTo', { percent: 100 })}
+        {hint(`${MOD_KEY}0`)}
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => onZoomTo(2)}>{t('canvas.zoomTo', { percent: 200 })}</DropdownMenuItem>
+      {/* phones show no rulers, so there is nothing to toggle there */}
+      {!isMobile && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={toggleRulers}>
+            {rulers ? t('canvas.hideRulers') : t('canvas.showRulers')}
+            {hint('⇧R')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => toggleViewOption('pixelGrid')}>
+            {viewOptions.pixelGrid ? t('canvas.hidePixelGrid') : t('canvas.showPixelGrid')}
+            {hint("⇧'")}
+          </DropdownMenuItem>
+        </>
+      )}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={() => toggleViewOption('cursors')}>
+        {viewOptions.cursors ? t('canvas.hideCursors') : t('canvas.showCursors')}
+        {hint(`${MOD_KEY}${ALT_KEY}\\`)}
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => toggleViewOption('comments')}>
+        {viewOptions.comments ? t('canvas.hideComments') : t('canvas.showComments')}
+        {hint('⇧C')}
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  )
+
+  if (slot !== undefined) {
+    if (!slot) return null
+    return createPortal(
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="bare"
+            aria-label={t('canvas.zoomLevel')}
+            className="h-7 gap-1 whitespace-nowrap rounded-[7px] px-2 font-mono text-[12px] font-normal text-ink hover:bg-paper-deep data-[state=open]:bg-paper-deep"
+          >
+            <span ref={labelRef}>{Math.round(useStore.getState().viewport.zoom * 100)}%</span>
+            <ChevronDownIcon className="size-3 text-ink-faint" />
+          </Button>
+        </DropdownMenuTrigger>
+        {menu('bottom')}
+      </DropdownMenu>,
+      slot,
+    )
+  }
+
   return (
     <Toolbar
       className={cn(
@@ -90,72 +185,7 @@ export function ZoomControls({
             <span ref={labelRef}>100%</span>
           </ToolbarButton>
         </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="end" width="md">
-          <div className="p-1.5">
-            <Input
-              variant="mono"
-              inputSize="sm"
-              aria-label={t('canvas.zoomLevel')}
-              value={draft}
-              autoFocus
-              onFocus={(e) => e.currentTarget.select()}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                /* the menu's own keys (typeahead, arrows) stay out of the
-                   field; Esc still closes the menu */
-                if (e.key !== 'Escape') e.stopPropagation()
-                if (e.key === 'Enter') applyDraft()
-              }}
-            />
-          </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={onZoomIn}>
-            {t('canvas.zoomIn')}
-            {hint(`${MOD_KEY}+`)}
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={onZoomOut}>
-            {t('canvas.zoomOut')}
-            {hint(`${MOD_KEY}−`)}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={onFit}>
-            {t('canvas.zoomToFit')}
-            {hint('⇧1')}
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled={!hasSelection} onSelect={onFitSelection}>
-            {t('canvas.zoomToSelection')}
-            {hint('⇧2')}
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => onZoomTo(0.5)}>{t('canvas.zoomTo', { percent: 50 })}</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => onZoomTo(1)}>
-            {t('canvas.zoomTo', { percent: 100 })}
-            {hint(`${MOD_KEY}0`)}
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => onZoomTo(2)}>{t('canvas.zoomTo', { percent: 200 })}</DropdownMenuItem>
-          {/* phones show no rulers, so there is nothing to toggle there */}
-          {!isMobile && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={toggleRulers}>
-                {rulers ? t('canvas.hideRulers') : t('canvas.showRulers')}
-                {hint('⇧R')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleViewOption('pixelGrid')}>
-                {viewOptions.pixelGrid ? t('canvas.hidePixelGrid') : t('canvas.showPixelGrid')}
-                {hint("⇧'")}
-              </DropdownMenuItem>
-            </>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => toggleViewOption('cursors')}>
-            {viewOptions.cursors ? t('canvas.hideCursors') : t('canvas.showCursors')}
-            {hint(`${MOD_KEY}${ALT_KEY}\\`)}
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => toggleViewOption('comments')}>
-            {viewOptions.comments ? t('canvas.hideComments') : t('canvas.showComments')}
-            {hint('⇧C')}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
+        {menu('top')}
       </DropdownMenu>
       <ToolbarButton aria-label={t('canvas.zoomIn')} className={stepBtn} onClick={onZoomIn}>
         <PlusIcon />

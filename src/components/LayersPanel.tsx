@@ -566,7 +566,7 @@ export function LayersPanel({
     >
       {/* the panel's two faces as icon tabs, the collapse control at the far end */}
       <PanelTabsRoot value={tab} onValueChange={(next) => setTab(next as typeof tab)} className="flex-none">
-        <PanelHeader className="h-10 pl-2">
+        <PanelHeader className={cn('h-10 pl-2', surface === 'embedded' && 'h-9 border-b-0')}>
           <PanelTabs aria-label={t('panels.layersTabsAria')}>
             <PanelIconTab value="layers" icon={<LayersIcon />} title={t('panels.layersTitle')}>
               {t('panels.layersTitle')}
@@ -587,7 +587,7 @@ export function LayersPanel({
               {t('panels.layersTabTokens')}
             </PanelIconTab>
           </PanelTabs>
-          {surface === 'inline' ? (
+          {surface === 'embedded' ? null : surface === 'inline' ? (
             <PanelClose label={t('common.close')} onClick={onClose} />
           ) : (
             <Tooltip label={t('panels.layersCollapsePanel')} side="bottom" align="end">

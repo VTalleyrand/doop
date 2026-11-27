@@ -81,6 +81,8 @@ export const settings = {
     'How the canvas editor lays out Layers, the inspector and Agents in this browser. Floating panels hover over the canvas; docked panels sit flush against the window’s edges, with the canvas between them.',
   panelsRow: 'Layout',
   panelsAria: 'Canvas panels',
+  panelsStudio: 'Studio',
+  panelsStudioNote: 'Chat, Layers and Comments share the left column; the selection’s properties sit on the right.',
   panelsFloating: 'Floating',
   panelsDocked: 'Docked',
   panelsFloatingNote: 'Panels float over the canvas.',

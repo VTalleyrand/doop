@@ -51,6 +51,8 @@ import { LimitWall, isResidentLimit } from '../components/TeamAllowance'
 import { WorkingNow } from '../components/WorkingNow'
 import { MobilePanelTabs, SideRail } from '../components/SideRail'
 import { LayersPanel, LayersRailToggle } from '../components/LayersPanel'
+import { StudioSidebar } from '../components/StudioSidebar'
+import { StudioBarEnd, StudioPageMenu, StudioProperties } from '../components/StudioChrome'
 import { IosAppPrompt } from '../components/NativeAppPromo'
 import { Onboarding } from '../components/Onboarding'
 import { AccessBanner } from '../components/AccessBanner'
@@ -103,6 +105,7 @@ import {
   LayersIcon,
   LinkIcon,
   MoreHorizontalIcon,
+  PanelLeftIcon,
   PlayIcon,
   PlusIcon,
   PrototypeModeIcon,
@@ -162,6 +165,9 @@ const INSPECTOR_W = 244
 const BAR_H = 50
 /* the docked bar is a flat strip, so it can sit a little tighter */
 const DOCKED_BAR_H = 44
+/* studio: the bar over the editor card, and the page's gutter around the card */
+const STUDIO_BAR_H = 44
+const CARD_GUTTER = 8
 /* how far what floats over the canvas keeps from a docked column */
 const FLOAT_GAP = 10
 /* the narrowest stage docked panels squeeze it to, while their minimums allow */
@@ -191,6 +197,7 @@ function chromeLayout({
   layersWidth,
   agentsWidth,
   docked,
+  studio,
 }: {
   layersOpen: boolean
   propertiesShown: boolean
@@ -198,7 +205,15 @@ function chromeLayout({
   layersWidth: number
   agentsWidth: number
   docked: boolean
+  studio: boolean
 }) {
+  if (studio) {
+    /* inside the editor card: the sidebar (when open), the tool rail beside
+       it; the properties column on the right */
+    const toolRail = layersOpen ? layersWidth : 0
+    const island = propertiesShown ? INSPECTOR_W : 0
+    return { toolRail, properties: 0, island, left: toolRail + RAIL_W, right: island }
+  }
   if (docked) {
     const toolRail = layersOpen ? layersWidth : RAIL_W
     const properties = agentsOpen ? agentsWidth : 0
@@ -281,7 +296,31 @@ export function CanvasPage({
   /* open on desktop for anyone signed in: an editor gets the Agents panel,
      a viewer or commenter its Comments tab alone (ActivityPanel). A guest has
      no panel at all — the team's conversation is not sent to them. */
-  const [showActivity, setShowActivity] = useState(() => !guest && !window.matchMedia('(max-width: 900px)').matches)
+  const [activityOpen, setActivityOpen] = useState(() => !guest && !window.matchMedia('(max-width: 900px)').matches)
+  /* the studio layout (the default) keeps Chat, Layers and Comments in one
+     left column, so "the Agents panel is open" means that column is open on
+     its chat face there */
+  const panelLayout = usePanelLayout()
+  const studio = panelLayout === 'studio' && !isMobile
+  const studioChatOpen = useStore((s) => s.layersOpen && s.sidebarFace === 'panel')
+  const showActivity = studio ? studioChatOpen : activityOpen
+  function setShowActivity(next: boolean | ((open: boolean) => boolean)) {
+    if (!studio) {
+      setActivityOpen(next)
+      return
+    }
+    const s = useStore.getState()
+    const open = typeof next === 'function' ? next(s.layersOpen && s.sidebarFace === 'panel') : next
+    if (!open) {
+      s.setSidebarFace('layers')
+      return
+    }
+    s.setSidebarFace('panel')
+    s.setLayersOpen(true)
+  }
+  /* studio: the properties column stays put whatever is selected, until its ✕ */
+  const [studioPropsHidden, setStudioPropsHidden] = useState(false)
+  const [zoomSlot, setZoomSlot] = useState<HTMLDivElement | null>(null)
   /* ?connect=1 (the "connect your agent" email) lands on the Connect AI
      modal; the flag comes off the URL once the page is up so a reload or a
      copied link does not reopen it */
@@ -749,47 +788,51 @@ export function CanvasPage({
      from the rail, until closed */
   const pagePanelOpen = useStore((s) => s.pagePanelOpen)
   const pageShown = !readOnly && !selectedFrame && pagePanelOpen && !deferPanel
-  /* the frame Inspector, the element panel or the Page panel, whichever has the slot */
-  const propertiesShown =
-    (!readOnly && !!selectedFrame && !deferPanel && (!!panelElement || inspectorOpen)) || pageShown
+  /* the frame Inspector, the element panel or the Page panel, whichever has the
+     slot; studio keeps its column open for whatever is selected, the page included */
+  const propertiesShown = studio
+    ? !readOnly && !studioPropsHidden
+    : (!readOnly && !!selectedFrame && !deferPanel && (!!panelElement || inspectorOpen)) || pageShown
   /* ⇧R docks the rulers on the canvas's top and left edges; the bar and the
      floating chrome step in past them (the same test Stage draws them by) */
   const rulers = useStore((s) => s.rulers)
   const chromeHidden = useStore((s) => s.uiHidden)
   const rulersShown = rulers && !chromeHidden && !isMobile
   /* docked panels: the stage sits between the columns, under a solid bar */
-  const docked = usePanelLayout() === 'docked' && !isMobile
+  const docked = panelLayout === 'docked' && !isMobile
   const panelSurface = docked ? 'docked' : 'floating'
-  /* docked, the rulers sit on the stage's own edges inside the columns, so
-     nothing steps in past them */
-  const rulerInset = rulersShown && !docked ? RULER_PX : 0
+  /* docked or studio, the rulers sit on the stage's own edges inside the
+     columns, so nothing steps in past them */
+  const rulerInset = rulersShown && !docked && !studio ? RULER_PX : 0
   const hasSelection = useStore((s) => s.selectedIds.length > 0)
 
   const fixedChrome = chromeLayout({
     layersOpen,
     propertiesShown,
-    agentsOpen: showActivity,
+    agentsOpen: showActivity && !studio,
     layersWidth: 0,
     agentsWidth: 0,
     docked,
+    studio,
   })
   const panels = fitPanelWidths({
     saved: panelWidths,
     viewport: viewportWidth,
     /* docked, the panels squeeze the stage itself, so it keeps a usable width */
-    reserved: fixedChrome.left + fixedChrome.right + rulerInset + (docked ? DOCKED_STAGE_MIN : 0),
+    reserved: fixedChrome.left + fixedChrome.right + rulerInset + (docked || studio ? DOCKED_STAGE_MIN : 0),
     layersOpen,
-    agentsOpen: showActivity,
+    agentsOpen: showActivity && !studio,
   })
   const layersWidth = panels.layers
   const agentsWidth = panels.agents
   const chrome = chromeLayout({
     layersOpen,
     propertiesShown,
-    agentsOpen: showActivity,
+    agentsOpen: showActivity && !studio,
     layersWidth,
     agentsWidth,
     docked,
+    studio,
   })
 
   /* the desktop shell's View menu: its toggles act here, and it mirrors
@@ -818,23 +861,33 @@ export function CanvasPage({
   }, [rulers, uiHidden, hideUiActive, layersOpen, showActivity, hasSelection])
   useEffect(() => () => syncViewMenu(NO_CANVAS), [])
   const chromeVars = {
-    '--chrome-top': isMobile ? '0px' : `${(docked ? DOCKED_BAR_H : BAR_H) + rulerInset}px`,
+    /* studio: the chrome layer is the editor card, already under the bar */
+    '--chrome-top': isMobile || studio ? '0px' : `${(docked ? DOCKED_BAR_H : BAR_H) + rulerInset}px`,
     '--rail-left': `${chrome.toolRail + rulerInset}px`,
     /* what floats over the canvas (the zoom pill, toasts) keeps clear of a
        docked column's edge */
-    '--chrome-left': `${chrome.left + (docked ? FLOAT_GAP : 0)}px`,
-    '--chrome-right': `${chrome.right + (docked ? FLOAT_GAP : 0)}px`,
+    '--chrome-left': `${chrome.left + (docked || studio ? FLOAT_GAP : 0)}px`,
+    '--chrome-right': `${chrome.right + (docked || studio ? FLOAT_GAP : 0)}px`,
   } as CSSProperties
   /* what the bar and the floating chrome cover of the stage, which spans the
      whole window; phones open their panels as sheets over everything */
   const stageInsets: StageInsets =
-    isMobile || uiHidden || docked
+    isMobile || uiHidden || docked || studio
       ? NO_INSETS
       : { top: BAR_H + rulerInset, right: chrome.right, bottom: 0, left: chrome.left + rulerInset }
   /* docked, the stage is the gap between the bar and the columns; ⌘. gives
      it the whole window back */
-  const stageBounds: StageInsets | undefined =
-    docked && !uiHidden ? { top: DOCKED_BAR_H, right: chrome.right, bottom: 0, left: chrome.left } : undefined
+  const stageBounds: StageInsets | undefined = uiHidden
+    ? undefined
+    : docked
+      ? { top: DOCKED_BAR_H, right: chrome.right, bottom: 0, left: chrome.left }
+      : studio
+        ? { top: 0, right: chrome.right, bottom: 0, left: chrome.left }
+        : undefined
+  /* studio: the whole editor sits in one rounded card under the bar, a
+     gutter of the page around it; ⌘. gives the canvas the whole window */
+  const studioCard: CSSProperties | undefined =
+    studio && !uiHidden ? { top: STUDIO_BAR_H, right: CARD_GUTTER, bottom: CARD_GUTTER, left: CARD_GUTTER } : undefined
   const meFace = {
     name: me.name,
     image: avatarUrl(session?.user.image),
@@ -868,7 +921,7 @@ export function CanvasPage({
   return (
     /* --app-inset is 0 normally; the impersonation shell raises it so this
        fixed layer starts below the banner instead of under it */
-    <div className="fixed inset-x-0 bottom-0 top-[var(--app-inset,0px)] bg-canvas">
+    <div className={cn('fixed inset-x-0 bottom-0 top-[var(--app-inset,0px)]', studio ? 'bg-sub' : 'bg-canvas')}>
       {/* Floating pills over the canvas, which shows through the transparent
           bar: the title pill on the left, live presence centred, sharing on
           the right. Tablet (xs..md) folds the text actions into the •••
@@ -880,11 +933,25 @@ export function CanvasPage({
       {/* with rulers on, the top ruler takes the window's top edge and the
           bar's pills float below it */}
       <TopBar
-        variant={docked ? 'docked' : 'canvas'}
+        variant={studio ? 'studio' : docked ? 'docked' : 'canvas'}
         className={cn(uiHidden && 'hidden')}
         style={rulerInset ? { top: rulerInset, left: rulerInset } : undefined}
       >
         <div className="flex min-w-0 items-center gap-2 max-xs:basis-full">
+          {studio && (
+            <Tooltip label={layersOpen ? t('panels.studioCollapse') : t('panels.studioExpand')} side="bottom">
+              <Button
+                variant="bare"
+                size="icon-sm"
+                className={barPillIconBtn}
+                aria-label={layersOpen ? t('panels.studioCollapse') : t('panels.studioExpand')}
+                aria-pressed={layersOpen}
+                onClick={() => useStore.getState().setLayersOpen(!layersOpen)}
+              >
+                <PanelLeftIcon className="size-3.5" />
+              </Button>
+            </Tooltip>
+          )}
           <BarPill className="min-w-0 gap-1 pr-3 pl-1">
             <MainMenu
               trigger={
@@ -900,6 +967,7 @@ export function CanvasPage({
               }
             />
             <CanvasName readOnly={readOnly} />
+            {studio && <StudioPageMenu />}
             {readOnly && (
               <Badge tone="outline" title={t('canvas.readOnlyBadgeTitle')}>
                 {role === 'comment' ? t('canvas.canComment') : t('canvas.viewOnly')}
@@ -916,7 +984,12 @@ export function CanvasPage({
             )}
           </BarPill>
         </div>
-        <div className={cn('absolute left-1/2 -translate-x-1/2 max-[1180px]:hidden', docked ? 'top-1' : 'top-3.5')}>
+        <div
+          className={cn(
+            'absolute left-1/2 -translate-x-1/2 max-[1180px]:hidden',
+            docked || studio ? 'top-1' : 'top-3.5',
+          )}
+        >
           <LivePresence me={meFace} others={others} onRenameSelf={() => setRenaming(true)} />
         </div>
         <div className="ml-auto flex flex-none items-center gap-2 max-md:hidden">
@@ -997,6 +1070,16 @@ export function CanvasPage({
               {t('canvas.connectAi')}
             </Button>
           )}
+          {studio && (
+            <StudioBarEnd
+              guest={guest}
+              propertiesAvailable={!readOnly}
+              propertiesShown={propertiesShown}
+              onToggleProperties={() => setStudioPropsHidden((hidden) => !hidden)}
+              me={meFace}
+              onRenameSelf={() => setRenaming(true)}
+            />
+          )}
         </div>
         <div className="ml-auto hidden items-center gap-1.5 max-md:flex max-xs:order-3">
           <div
@@ -1036,9 +1119,18 @@ export function CanvasPage({
       {/* the canvas runs under the transparent top bar to the window's top
           edge; the floating chrome gets its own layer that starts below the
           bar, so every panel offset stays measured from there */}
-      <div className="absolute inset-0 overflow-hidden" style={chromeVars}>
+      <div
+        className={cn('absolute inset-0 overflow-hidden', studioCard && 'rounded-panel bg-canvas shadow-ring')}
+        style={{ ...chromeVars, ...studioCard }}
+      >
         {find && !presenting && !uiHidden && <FindBar mode={find} step={findStep} onClose={() => setFind(null)} />}
-        <Stage onAddFrame={addFrame} insets={stageInsets} bounds={stageBounds} docked={docked} />
+        <Stage
+          onAddFrame={addFrame}
+          insets={stageInsets}
+          bounds={stageBounds}
+          docked={docked || studio}
+          zoomSlot={studio && propertiesShown && zoomSlot ? zoomSlot : undefined}
+        />
         <div
           className={cn(
             'pointer-events-none absolute inset-x-0 bottom-0 top-[50px] max-md:top-14 max-xs:top-[100px]',
@@ -1046,7 +1138,7 @@ export function CanvasPage({
           )}
           /* panel offsets are measured from this layer, so moving it past
              the rulers moves every panel with it */
-          style={rulerInset || docked ? { top: 'var(--chrome-top)', left: rulerInset } : undefined}
+          style={rulerInset || docked || studio ? { top: 'var(--chrome-top)', left: rulerInset } : undefined}
         >
           <div className="pointer-events-none absolute top-3.5 right-[var(--chrome-right)] z-30 flex flex-col items-end gap-2 transition-[right] duration-150 [&>*]:pointer-events-auto max-md:top-[56px] max-md:right-2 max-md:left-2">
             {pendingProposal && mutedProposal !== pendingProposal.id && !(showActivity && panelTab === 'memory') && (
@@ -1098,7 +1190,40 @@ export function CanvasPage({
           {!readOnly && <Onboarding canvasId={canvasId} />}
           <IosAppPrompt />
           <AccessBanner guest={guest} onSignUp={onSignUp} onSignIn={onSignIn} />
+          {studio && layersOpen && (
+            <StudioSidebar
+              canvasId={canvasId}
+              onAddFrame={addFrame}
+              resize={{
+                label: t('canvas.resizeLayers'),
+                edge: 'right',
+                width: layersWidth,
+                min: LAYERS_MIN,
+                max: panels.layersMax,
+                onResize: (layers) => setPanelWidths((widths) => ({ layers, agents: widths.agents })),
+              }}
+            />
+          )}
+          {studio && propertiesShown && (
+            <StudioProperties
+              zoomSlot={setZoomSlot}
+              onBackToChat={() => {
+                setStudioPropsHidden(true)
+                setShowActivity(true)
+              }}
+              onClose={() => setStudioPropsHidden(true)}
+            >
+              {selectedFrame && panelElement ? (
+                <ElementPanel frame={selectedFrame} selector={panelElement.selector} surface="embedded" />
+              ) : selectedFrame ? (
+                <Inspector frame={selectedFrame} surface="embedded" />
+              ) : (
+                <PagePanel surface="embedded" />
+              )}
+            </StudioProperties>
+          )}
           {!isMobile &&
+            !studio &&
             (layersOpen ? (
               <LayersPanel
                 onAddFrame={addFrame}
@@ -1126,7 +1251,7 @@ export function CanvasPage({
               }}
             />
           )}
-          {!isMobile && !readOnly && selectedFrame && panelElement && !deferPanel && (
+          {!isMobile && !studio && !readOnly && selectedFrame && panelElement && !deferPanel && (
             <ElementPanel
               /* never keyed: picking the next element, in this frame or
                  another, swaps the values in place instead of remounting */
@@ -1136,11 +1261,13 @@ export function CanvasPage({
               style={{ right: chrome.properties }}
             />
           )}
-          {!isMobile && !readOnly && selectedFrame && inspectorOpen && !panelElement && !deferPanel && (
+          {!isMobile && !studio && !readOnly && selectedFrame && inspectorOpen && !panelElement && !deferPanel && (
             <Inspector frame={selectedFrame} surface={panelSurface} style={{ right: chrome.properties }} />
           )}
-          {!isMobile && pageShown && <PagePanel surface={panelSurface} style={{ right: chrome.properties }} />}
-          {!isMobile && showActivity && (
+          {!isMobile && !studio && pageShown && (
+            <PagePanel surface={panelSurface} style={{ right: chrome.properties }} />
+          )}
+          {!isMobile && !studio && showActivity && (
             <ActivityPanel
               canvasId={canvasId}
               onClose={() => setShowActivity(false)}
@@ -1157,7 +1284,7 @@ export function CanvasPage({
               }}
             />
           )}
-          {!isMobile && (
+          {!isMobile && !studio && (
             <SideRail
               style={{ right: chrome.island }}
               docked={docked}

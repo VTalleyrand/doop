@@ -27,6 +27,10 @@ const topBarVariants = cva(
            up with the Layers panel's own icon, 14px in. */
         docked:
           'absolute inset-x-0 top-0 h-11 items-center gap-2.5 border-b border-line-soft bg-surface pr-3.5 pl-0.5 [&_[data-slot=bar-pill]]:shadow-none',
+        /* the studio layout: no strip, the page itself, with the editor card
+           under it; the pills lie flat on the page */
+        studio:
+          'absolute inset-x-0 top-0 h-11 items-center gap-1.5 bg-transparent pr-3 pl-2 [&_[data-slot=bar-pill]]:bg-transparent [&_[data-slot=bar-pill]]:shadow-none',
       },
     },
     defaultVariants: { variant: 'solid' },

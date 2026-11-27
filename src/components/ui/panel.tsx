@@ -23,6 +23,8 @@ const panelVariants = cva('flex min-w-0 flex-col overflow-hidden bg-surface', {
          canvas beside it (Settings → Appearance → Canvas panels); the
          caller says which side takes the hairline */
       docked: 'pointer-events-auto absolute inset-y-0 z-[35] rounded-none border-line-soft shadow-none',
+      /* one face of a studio column, which owns the edge and the position */
+      embedded: 'pointer-events-auto relative min-h-0 w-full flex-1 rounded-none border-0 shadow-none',
       /* filling a Sheet: no chrome of its own, the sheet provides it */
       inline: 'h-full w-full rounded-none border-0 shadow-none',
     },
@@ -74,7 +76,7 @@ function Panel({
     drag.current = null
     setDragging(false)
   }
-  const resizing = surface !== 'inline' ? resize : undefined
+  const resizing = surface !== 'inline' && surface !== 'embedded' ? resize : undefined
   const setWidth = (width: number) => {
     if (resizing) resizing.onResize(Math.round(Math.max(resizing.min, Math.min(resizing.max, width))))
   }

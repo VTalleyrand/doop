@@ -2,9 +2,10 @@ import type { ComponentType } from 'react'
 import { isPanelLayout, setPanelLayout, usePanelLayout, type PanelLayout } from '../lib/panelLayout'
 import { useT, type PlainMessageKey } from '../lib/i18n'
 import { ToggleChipGroup, ToggleChipItem } from './ui/toggle-chip'
-import { PanelsDockedIcon, PanelsFloatingIcon, type IconProps } from './ui/icons'
+import { PanelsDockedIcon, PanelsFloatingIcon, PanelsStudioIcon, type IconProps } from './ui/icons'
 
 const options: { value: PanelLayout; label: PlainMessageKey; Icon: ComponentType<IconProps> }[] = [
+  { value: 'studio', label: 'settings.panelsStudio', Icon: PanelsStudioIcon },
   { value: 'floating', label: 'settings.panelsFloating', Icon: PanelsFloatingIcon },
   { value: 'docked', label: 'settings.panelsDocked', Icon: PanelsDockedIcon },
 ]

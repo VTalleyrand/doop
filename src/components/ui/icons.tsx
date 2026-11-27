@@ -89,6 +89,7 @@ import {
   Moon,
   PanelLeft,
   PanelsLeftRight,
+  LayoutPanelLeft,
   PictureInPicture2,
   PanelLeftClose,
   PanelLeftOpen,
@@ -291,6 +292,7 @@ export const PanelCollapseRightIcon = icon(PanelRightClose)
 /** the canvas panels' two layouts (Settings → Appearance) */
 export const PanelsFloatingIcon = icon(PictureInPicture2)
 export const PanelsDockedIcon = icon(PanelsLeftRight)
+export const PanelsStudioIcon = icon(LayoutPanelLeft)
 export const LayersIcon = icon(Layers)
 export const FrameIcon = icon(Frame)
 /** a page of the canvas, in the Layers panel's Pages list */

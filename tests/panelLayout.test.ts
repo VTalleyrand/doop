@@ -7,9 +7,9 @@ describe('panel layout preference', () => {
     vi.resetModules()
   })
 
-  it('floats until someone picks docked, and remembers the pick', async () => {
+  it('opens in the studio layout until someone picks another, and remembers the pick', async () => {
     const first = await import('../src/lib/panelLayout')
-    expect(first.getPanelLayout()).toBe('floating')
+    expect(first.getPanelLayout()).toBe('studio')
     first.setPanelLayout('docked')
     expect(localStorage.getItem(first.PANEL_LAYOUT_STORAGE_KEY)).toBe('docked')
     vi.resetModules()
@@ -20,14 +20,16 @@ describe('panel layout preference', () => {
   it('ignores a value it does not know', async () => {
     localStorage.setItem('doop:panel-layout', 'sideways')
     const { getPanelLayout } = await import('../src/lib/panelLayout')
-    expect(getPanelLayout()).toBe('floating')
+    expect(getPanelLayout()).toBe('studio')
   })
 
   it('picks up a choice another tab stored while nothing here listened', async () => {
     const { getPanelLayout } = await import('../src/lib/panelLayout')
-    expect(getPanelLayout()).toBe('floating')
+    expect(getPanelLayout()).toBe('studio')
     localStorage.setItem('doop:panel-layout', 'docked')
     expect(getPanelLayout()).toBe('docked')
+    localStorage.setItem('doop:panel-layout', 'floating')
+    expect(getPanelLayout()).toBe('floating')
   })
 
   it('keeps a pick storage would not take for this session', async () => {

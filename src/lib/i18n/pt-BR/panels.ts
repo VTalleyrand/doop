@@ -347,4 +347,13 @@ export const panels: Catalog['panels'] = {
   protoNothing: 'Nada para reproduzir ainda',
   protoNothingText: 'Esta página do canvas não tem frames.',
   protoOpenCanvas: 'Abrir o canvas',
+  studioTabsAria: 'Barra lateral',
+  studioChat: 'Chat',
+  studioMore: 'Mais',
+  studioCollapse: 'Ocultar barra lateral',
+  studioExpand: 'Mostrar barra lateral',
+  studioBackToChat: 'Voltar ao chat',
+  studioHideProperties: 'Ocultar propriedades',
+  studioShowProperties: 'Mostrar propriedades',
+  studioPages: 'Páginas',
 }

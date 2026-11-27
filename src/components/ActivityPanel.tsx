@@ -146,15 +146,7 @@ export function ActivityPanel({
         {/* the Agents tab is a column: what the agents are doing on top, the
             conversation with them under it, the prompt composer docked below */}
         <PanelTabPanel value="tasks" className={tabEnter}>
-          {hasChat ? (
-            <AgentsSplit />
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-              <RecentTasks />
-            </div>
-          )}
-          {/* the composer briefs agents to change frames: editors only */}
-          {canEdit && <PromptBar canvasId={canvasId} />}
+          <AgentsColumn canvasId={canvasId} hasChat={hasChat} canEdit={canEdit} />
         </PanelTabPanel>
         <PanelTabPanel value="comments" className={tabEnter}>
           <CommentsPanel />
@@ -167,6 +159,39 @@ export function ActivityPanel({
         </PanelTabPanel>
       </PanelTabsRoot>
     </Panel>
+  )
+}
+
+function AgentsColumn({ canvasId, hasChat, canEdit }: { canvasId: string; hasChat: boolean; canEdit: boolean }) {
+  return (
+    <>
+      {hasChat ? (
+        <AgentsSplit />
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+          <RecentTasks />
+        </div>
+      )}
+      {/* the composer briefs agents to change frames: editors only */}
+      {canEdit && <PromptBar canvasId={canvasId} />}
+    </>
+  )
+}
+
+/** The Agents tab on its own, for the studio layout's Chat tab: recent tasks,
+ *  the conversation and the composer, with relative times kept fresh. */
+export function AgentsChat({ canvasId }: { canvasId: string }) {
+  const canEdit = useStore(canEditOpenCanvas)
+  const hasChat = useAgentTasks().some(isChatCard)
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const timer = window.setInterval(() => tick((n) => n + 1), 5000)
+    return () => window.clearInterval(timer)
+  }, [])
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <AgentsColumn canvasId={canvasId} hasChat={hasChat} canEdit={canEdit} />
+    </div>
   )
 }
 
@@ -455,7 +480,7 @@ function TaskMark({ task }: { task: AgentTask }) {
   return <DotMatrix />
 }
 
-function ActivityList() {
+export function ActivityList() {
   const activity = useStore((s) => s.activity)
   const t = useT()
   return (
